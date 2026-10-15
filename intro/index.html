@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Squint intro preview</title>
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap; src: url('../app/static/fonts/inter-latin-wght-normal.woff2') format('woff2'); }
+body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #F5F5F7; color: #1D1D1F; }
+main { padding: 40px; }
+</style>
+<link rel="stylesheet" href="intro.css">
+</head>
+<body>
+<main id="main"><h1>Squint dashboard (placeholder)</h1><p>Preview of the intro module. Add <code>?force</code> to the URL to show it even after it has been seen.</p></main>
+<script src="intro.js"></script>
+<script>
+// Preview only: the real wiring lives in app/static.
+if (location.search.indexOf('force') > -1 || SquintIntro.shouldShow()) SquintIntro.show({ logo: '../app/static/logo.svg', onDone: function () { document.getElementById('main').querySelector('h1').textContent = 'Dashboard (intro done)'; } });
+</script>
+</body>
+</html>

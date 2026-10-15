@@ -1,0 +1,10 @@
+*
+!static/
+!Dockerfile
+!requirements.txt
+!server.py
+!ask_gemini.py
+!factcheck.py
+!brief_ai.py
+!static/**
+**/__pycache__

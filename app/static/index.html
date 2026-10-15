@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loading</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="intro.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr" id="hdr">
+  <a class="brand" id="brand" href="#overview">
+    <img class="logo" id="logo" src="logo.svg" alt="" width="32" height="32">
+    <span class="brand-name" id="brand-name"></span>
+  </a>
+  <div class="hdr-tools">
+    <div class="fgroup" id="g-dataset" hidden><span class="flabel" id="l-dataset">Sample data</span><div class="seg" id="dataset" role="radiogroup" aria-labelledby="l-dataset"></div></div>
+    <button type="button" class="iconbtn" id="theme"></button>
+  </div>
+</header>
+
+<div class="fbar" id="fbar" aria-label="Filters">
+  <div class="fgroup" id="g-platform" hidden><span class="flabel" id="l-platform">Platform</span><div class="seg" id="platform" role="radiogroup" aria-labelledby="l-platform"></div></div>
+  <div class="fgroup"><span class="flabel" id="l-range">Timeframe</span><div class="seg" id="range" role="radiogroup" aria-labelledby="l-range"></div></div>
+  <div class="fgroup"><span class="flabel" id="l-persona">User group</span><div class="seg seg-wrap" id="persona" role="group" aria-labelledby="l-persona"></div></div>
+</div>
+
+<div class="shell">
+  <nav class="side" aria-label="Sections">
+    <div class="navlist" id="navlist"></div>
+    <div class="src" id="src"></div>
+  </nav>
+  <main class="page" id="main" tabindex="-1">
+    <div id="view"></div>
+    <footer class="foot" id="foot"></footer>
+  </main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden></aside>
+<div class="sr" id="announce" aria-live="polite"></div>
+<script src="intro.js"></script>
+<script src="intro-boot.js"></script>
+<script src="brand.js"></script>
+<script src="flowcheck.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

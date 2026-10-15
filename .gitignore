@@ -1,0 +1,39 @@
+# secrets
+.env
+.env.*
+*.key
+*.pem
+service-account*.json
+application_default_credentials.json
+
+# generated / large data (regenerate with pipeline/generate.py)
+data/
+*.jsonl
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# source documents (may contain company content)
+*.docx
+
+# editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# downloaded bundles
+*.zip
+app/static.bak-before-redesign/
+app/static.bak-before-scout/
+
+# design inputs and scratch (not needed to run; may hold third-party material)
+must-implement/
+tmp/
+docs/wayfinder-quick-look.pdf
+
+# firebase
+.firebase/
+firebase-debug.log
+*.rar

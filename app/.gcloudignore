@@ -1,0 +1,11 @@
+# Same allowlist as .dockerignore: only what the image needs is uploaded to Cloud Build.
+*
+!Dockerfile
+!requirements.txt
+!server.py
+!ask_gemini.py
+!factcheck.py
+!brief_ai.py
+!static/
+!static/**
+.gcloudignore

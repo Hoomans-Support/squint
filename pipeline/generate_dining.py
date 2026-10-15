@@ -1,0 +1,722 @@
+#!/usr/bin/env python3
+"""Synthetic event generator, dataset synthetic-dining-v1 (a food ordering and table booking app).
+
+ALL DATA PRODUCED HERE IS SYNTHETIC. Label it as such in the UI, the deck and the video. Deterministic for a seed.
+
+A second sample dataset next to synthetic-v2 (the wallet). It is a re-skinned twin: the same internal screen, persona, product and
+journey ids, but its own raw event layout (different field and event names, translated by pipeline/mapping_dining.json), its own
+story, dates, numbers and wording (pipeline/profiles/dining.py). The wallet generator (generate_v2.py) is untouched.
+
+1,000 users: 220 guests (unregistered), 100 office groups (large_business), 360 students (sari_sari), 120 families
+(individual_trader), 120 couples or solo diners (individual), 40 unknown, 40 promo abusers (fraudster). Window 2026-09-15 to
+2026-10-15 UTC. Amounts are in PHP.
+
+Planted (see ground_truth.json; the keys keep the wallet names so the Guardian and Watchdog checks apply unchanged):
+  control  topup_amount (party size and deposit, where the table is requested) loses ~14% of sessions all window, every group, error
+           reservation_failed (no table for that party size); personal_data (name) and tin (dietary preferences) lose the normal ~4% and ~5%
+  P1       OTP not delivered 2026-10-10 10:00-18:00 UTC (the evening rush): ~70% of attempts stall on the otp screen
+  P2       office groups put down deposits above PHP 50,000 for events; everyone else stays under PHP 5,000
+  P3       students order rice meals (eload) in ~72% of orders (expected behavior)
+  P4       families abandon group platters (send_money) at checkout ~53% of the time (others ~5%): gateway timeouts
+  M1       promo abusers: bursts, odd hours, failed attempts, up to 5 users per device
+  M2       guests open the menu repeatedly before signing up (natural exit)
+  G1-G4    telemetry faults (payment-method tracker silent on app 5.3, inside table booking, 2.4% row loss on 2026-10-08, unmapped property
+           sms_route_v2, checkout double-fire on Android 09-24..09-28)
+
+Usage:  python pipeline/generate_dining.py [--seed 42] [--out data/dining]
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import random
+from collections import Counter, defaultdict
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from statistics import median
+
+from profiles.dining import JOURNEYS as DINING_JOURNEYS
+from schema import JOURNEYS, PRODUCTS, TERMINAL_SCREENS
+
+JOURNEYS = {**JOURNEYS, **DINING_JOURNEYS}     # the payment method is asked after sign-up, inside table booking (profiles/dining.py)
+
+DATASET = "synthetic-dining-v1"
+UTC = timezone.utc
+JKT = timezone(timedelta(hours=7))
+START = datetime(2026, 9, 15, tzinfo=UTC)
+DAYS = 30
+END = START + timedelta(days=DAYS)
+
+POPULATION = [("unregistered", 220), ("large_business", 100), ("sari_sari", 360), ("individual_trader", 120),
+              ("individual", 120), ("unknown", 40), ("fraudster", 40)]
+
+# planted values
+OTP_START, OTP_END = datetime(2026, 10, 10, 10, tzinfo=UTC), datetime(2026, 10, 10, 18, tzinfo=UTC)
+OTP_STALL = 0.70
+TOPUP_BIG_MIN, TOPUP_SMALL_MAX = 50_000, 4_999
+LARGE_TOPUP_SHARE = 0.87
+ELOAD_SHARE = 0.72
+P4_CONTINUE = 0.47
+V412_DATE = datetime(2026, 10, 7, tzinfo=UTC)
+V412_SHARE = 0.55
+ANDROID_FIX = datetime(2026, 9, 26, tzinfo=UTC)          # Android runs 5.2.1 before this, 5.2.2 after
+G1_START = datetime(2026, 10, 12, 20, tzinfo=UTC)         # kyc_selfie (add payment method) tracker silent on 5.3
+G1_DROP = 0.92
+G2_DAY = datetime(2026, 10, 8, tzinfo=UTC)
+G2_LOSS = 0.024
+G4_START, G4_END = datetime(2026, 9, 24, tzinfo=UTC), datetime(2026, 9, 28, tzinfo=UTC)
+
+# continue probability per screen (everyone, outside planted faults)
+P_CONT = {"welcome": .98, "register_phone": .97, "otp": .95, "personal_data": .96, "tin": .95, "kyc_selfie": .96,
+          "login_phone": .98, "wallet": .98, "topup_amount": .86, "topup_confirm": .95,
+          "product_list": .96, "txn_details": .94, "txn_checkout": .95}
+# Each product has its own weakest step, so the demo does not show the same drop-off everywhere. Kept mild on purpose (a few points
+# above the normal 5%), so the Watchdog does not read them as planted faults. Reason shown by the exit rules afterwards:
+#   error -> technical, back -> ux (went back before leaving), language -> stuck on the screen over 30 s, natural -> just browsing.
+P_CONT_PRODUCT = {("eload", "product_list"): .94, ("water_bill", "txn_details"): .92, ("electricity_bill", "txn_checkout"): .91,
+                  ("game_voucher", "txn_checkout"): .91, ("cable_internet", "txn_details"): .90, ("postpaid_telecom", "txn_details"): .92}
+PRODUCT_REASON = {("water_bill", "txn_details"): ("error", "item_unavailable"), ("electricity_bill", "txn_checkout"): ("error", "promo_invalid"),
+                  ("game_voucher", "txn_checkout"): ("back", None), ("cable_internet", "txn_details"): ("language", None),
+                  ("postpaid_telecom", "txn_details"): ("back", None), ("eload", "product_list"): ("natural", None)}
+P_CONT_FRAUD = {"login_phone": .95, "otp": .78, "topup_confirm": .60, "txn_details": .94, "txn_checkout": .55}
+P_BACK = 0.02
+P_DEAD = 0.012
+P_RAGE = 0.006
+IDLE_P = 0.20            # share of long-enough screen visits with no activity heartbeat
+
+# screen: (median dwell ms, sigma, focus elements, cta element)
+SPEC = {
+    "prices": (38000, .5, [], "dish_card"),
+    "welcome": (5000, .4, [], "get_started"),
+    "register_phone": (13000, .4, ["phone"], "continue"),
+    "login_phone": (8000, .4, ["phone"], "login"),
+    "otp": (17000, .5, ["otp_input"], "verify"),
+    "personal_data": (20000, .5, ["full_name"], "continue"),
+    "tin": (24000, .5, ["diet_input"], "continue"),
+    "kyc_selfie": (30000, .45, [], "add_card"),
+    "register_done": (4000, .3, [], None),
+    "home": (5000, .4, [], None),
+    "wallet": (9000, .4, [], "reserve_btn"),
+    "topup_amount": (18000, .45, ["party_size", "deposit"], "continue"),
+    "topup_confirm": (11000, .4, [], "confirm"),
+    "topup_done": (4000, .3, [], None),
+    "product_list": (14000, .45, [], "dish"),
+    "txn_details": (26000, .5, ["delivery_address", "promo_code"], "continue"),
+    "txn_checkout": (14000, .45, ["card_cvv"], "pay"),
+    "txn_done": (4000, .3, [], None),
+}
+ERROR_CODES = {"otp": "otp_invalid", "txn_checkout": "card_declined", "topup_confirm": "deposit_failed", "topup_amount": "reservation_failed",
+               "personal_data": "validation_error", "tin": "preference_invalid"}
+PRODUCT_AMOUNT = {"eload": (120, 450), "water_bill": (100, 400), "electricity_bill": (150, 600),
+                  "game_voucher": (250, 900), "cable_internet": (80, 300), "send_money": (900, 6000),
+                  "postpaid_telecom": (80, 350)}
+EVT_APP = {"screen_view": "view", "screen_leave": "leave", "click": "press", "form_focus": "input_focus",
+           "rage_click": "frantic_press", "dead_tap": "noop_press", "back": "nav_back", "error": "fail",
+           "session_end": "app_closed"}
+SCREEN_RAW = {"prices": "MenuBrowse", "welcome": "Splash", "register_phone": "SignupPhone", "login_phone": "LoginPhone", "otp": "OtpVerify",
+              "personal_data": "ProfileName", "tin": "DietPrefs", "kyc_selfie": "PaymentMethod", "register_done": "SignupDone",
+              "home": "Home", "wallet": "RestaurantPicker", "topup_amount": "PartyDeposit", "topup_confirm": "BookingConfirm",
+              "topup_done": "BookingDone", "product_list": "CategoryList", "txn_details": "CartReview", "txn_checkout": "CheckoutPay",
+              "txn_done": "OrderPlaced"}
+LOW_MODELS = [("Redmi 9A", "10"), ("Samsung Galaxy A03", "11"), ("Infinix Smart 6", "11"), ("Realme C11", "10"),
+              ("Oppo A15", "11"), ("Vivo Y12", "10")]
+MID_MODELS = [("Samsung Galaxy S23", "14"), ("Pixel 7", "14"), ("Xiaomi 13", "13"), ("Oppo Reno 10", "13"),
+              ("Samsung Galaxy A54", "13")]
+IOS_MODELS = [("iPhone 11", "16.7"), ("iPhone 12", "17.4"), ("iPhone 13", "17.5.1"), ("iPhone 14", "18.0"),
+              ("iPhone 15", "18.1")]
+
+
+def iso_ms(dt: datetime) -> str:
+    return dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
+
+
+def hour_weights(persona: str) -> list[float]:
+    w = []
+    for h in range(24):
+        wib = (h + 7) % 24
+        if persona == "fraudster":
+            w.append(1.0 if wib < 6 else 0.04)
+        elif persona == "large_business":          # office lunches and event planning
+            w.append(1.0 if 9 <= wib <= 13 else 0.15 if 14 <= wib <= 18 else 0.03)
+        elif persona == "sari_sari":               # students: afternoons and evenings
+            w.append(0.08 if wib < 9 else 1.0 if wib <= 23 else 0.3)
+        else:                                      # lunch and dinner peaks
+            w.append(0.03 if wib < 6 else 0.4 if wib in (6, 7, 8, 9, 10) else 1.0 if wib in (11, 12, 13, 18, 19, 20, 21) else 0.45)
+    return w
+
+
+HW = {p: hour_weights(p) for p, _ in POPULATION}
+DAY_W = [0.85 if (START + timedelta(days=d)).weekday() >= 5 else 1.0 for d in range(DAYS)]
+
+
+def sample_time(rng, persona: str) -> datetime:
+    d = rng.choices(range(DAYS), DAY_W)[0]
+    h = rng.choices(range(24), HW[persona])[0]
+    return START + timedelta(days=d, hours=h, minutes=rng.randint(0, 59), seconds=rng.randint(0, 59),
+                             milliseconds=rng.randint(0, 999))
+
+
+def time_between(rng, persona: str, a: datetime, b: datetime) -> datetime:
+    for _ in range(200):
+        t = sample_time(rng, persona)
+        if a <= t < b:
+            return t
+    return a + (b - a) * rng.random()
+
+
+def plan_times(rng, persona: str, n: int) -> list[datetime]:
+    if persona == "fraudster":     # bursts: groups of 2-6 sessions a few minutes apart, at odd hours
+        out = []
+        while len(out) < n:
+            k = min(rng.randint(2, 6), n - len(out))
+            t = sample_time(rng, persona)
+            for _ in range(k):
+                out.append(t)
+                t = t + timedelta(minutes=rng.uniform(2, 8))
+        out = [t for t in out if t < END - timedelta(minutes=5)] or [sample_time(rng, persona)]
+        while len(out) < n:
+            out.append(sample_time(rng, persona))
+        return sorted(out)
+    for _ in range(20):
+        ts = sorted(sample_time(rng, persona) for _ in range(n))
+        for i in range(1, len(ts)):
+            if ts[i] - ts[i - 1] < timedelta(minutes=15):
+                ts[i] = ts[i - 1] + timedelta(minutes=15, seconds=rng.randint(0, 600))
+        if ts[-1] < END - timedelta(minutes=10):
+            return ts
+    return ts
+
+
+def make_users_and_devices(rng):
+    users, idx = [], 1
+    for persona, n in POPULATION:
+        for _ in range(n):
+            users.append({"uid": f"U{idx:05d}", "persona": persona})
+            idx += 1
+    by_persona = defaultdict(list)
+    for u in users:
+        by_persona[u["persona"]].append(u)
+    groups = []
+    for persona, lst in by_persona.items():
+        lst = lst[:]
+        rng.shuffle(lst)
+        i = 0
+        while i < len(lst):
+            if persona == "fraudster":
+                size = 5
+            elif persona == "unknown":
+                size = rng.choice([2, 3, 4])
+            elif persona == "sari_sari":
+                size = rng.choice([1, 1, 1, 1, 1, 1, 2, 2, 2, 3])
+            else:
+                size = rng.choice([1] * 45 + [2] * 4 + [3])
+            groups.append(lst[i:i + size])
+            i += size
+    rng.shuffle(groups)
+    counts = {"android": 0, "ios": 0}
+    devices = []
+    for g in groups:
+        os_ = "android" if counts["android"] < counts["ios"] else "ios" if counts["ios"] < counts["android"] else rng.choice(["android", "ios"])
+        counts[os_] += len(g)
+        if os_ == "android":
+            low = rng.random() < 0.55
+            model, ver = rng.choice(LOW_MODELS if low else MID_MODELS)
+            cls = "android_low" if low else "android_mid"
+        else:
+            model, ver = rng.choice(IOS_MODELS)
+            cls = "ios"
+        dev = {"id": "dev_" + "".join(rng.choice("0123456789abcdef") for _ in range(10)), "os": os_, "model": model,
+               "os_version": ver, "cls": cls, "users": [u["uid"] for u in g]}
+        devices.append(dev)
+        for u in g:
+            u["dev"] = dev
+    for k, dev in enumerate(rng.sample(devices, len(devices))):
+        dev["new_sdk"] = k < round(V412_SHARE * len(devices))
+    return users, devices
+
+
+def app_version(dev: dict, ts: datetime) -> str:
+    if ts >= V412_DATE and dev["new_sdk"]:
+        return "5.3"
+    if dev["os"] == "android" and ts < ANDROID_FIX:
+        return "5.2.1"
+    return "5.2.2"
+
+
+def product_weights(rng_noise: random.Random, persona: str) -> list[float]:
+    if persona == "sari_sari":
+        return [ELOAD_SHARE if p == "eload" else (1 - ELOAD_SHARE) / 6 for p in PRODUCTS]
+    return [rng_noise.uniform(0.9, 1.1) for _ in PRODUCTS]
+
+
+def lognorm(rng, med, sig, lo=700, hi=240000) -> int:
+    return int(min(max(rng.lognormvariate(math.log(med), sig), lo), hi))
+
+
+def topup_amount(rng, persona: str) -> int:
+    if persona == "large_business" and rng.random() < LARGE_TOPUP_SHARE:
+        return int(round(math.exp(rng.uniform(math.log(TOPUP_BIG_MIN + 1), math.log(500_000))), -3)) or TOPUP_BIG_MIN + 1000
+    return int(min(max(round(rng.lognormvariate(math.log(800), 0.8), -1), 100), TOPUP_SMALL_MAX))
+
+
+def txn_amount(rng, product: str) -> int:
+    lo, hi = PRODUCT_AMOUNT[product]
+    return int(round(math.exp(rng.uniform(math.log(lo), math.log(hi))), -1)) or lo
+
+
+# tap position (x, y as a share of the screen) of each element's centre; "*" is the screen's main button
+ELEMENT_POS = {("otp", "resend"): (0.50, 0.66), ("otp", "verify"): (0.50, 0.86), ("txn_checkout", "pay"): (0.50, 0.90),
+               ("otp", "*"): (0.50, 0.86), ("txn_checkout", "*"): (0.50, 0.90)}
+AMOUNT_ALL = {"topup_confirm", "topup_done", "txn_checkout", "txn_done"}
+AMOUNT_AFTER = {"topup_amount", "txn_details"}      # not on screen_view / form_focus (amount not typed yet)
+
+
+def simulate(rng, user: dict, journey: str, t0: datetime, product: str | None):
+    """One session. Returns (events, outcome). Events carry absolute UTC timestamps."""
+    persona, dev = user["persona"], user["dev"]
+    ver = app_version(dev, t0)
+    path = JOURNEYS[journey]
+    ev: list[dict] = []
+    amount = topup_amount(rng, persona) if journey == "topup" else (txn_amount(rng, product) if journey == "transaction" else None)
+    out = {"user": user["uid"], "persona": persona, "journey": journey, "product": product, "amount": amount,
+           "t0": t0, "ver": ver, "completed": False, "last": None, "stalled": False, "in_otp_window": False,
+           "p4_fail": False, "back": 0, "rage": 0, "dead": 0, "errors": 0, "otp_exit": False, "screens": set(),
+           "dev": dev["id"]}
+
+    def add(ts, etype, screen, element=None, **kw):
+        e = {"ts": ts, "type": etype, "screen": screen, "element": element, **kw}
+        if etype in ("click", "rage_click", "dead_tap") and element:
+            cx, cy = ELEMENT_POS.get((screen, element), ELEMENT_POS.get((screen, "*"), (0.5, 0.85)))
+            sg = 0.02 if etype == "rage_click" and element in ("resend", "pay") else 0.045
+            e["tap_x"], e["tap_y"] = round(min(max(rng.gauss(cx, sg), 0), 1), 3), round(min(max(rng.gauss(cy, sg), 0), 1), 3)
+        if product and (screen == "product_list" and etype not in ("screen_view", "form_focus")
+                        or screen in ("txn_details", "txn_checkout", "txn_done")):
+            e["product"] = product
+        if amount is not None and (screen in AMOUNT_ALL or (screen in AMOUNT_AFTER and etype not in ("screen_view", "form_focus"))):
+            e["amount"] = amount
+        ev.append(e)
+
+    def visit(screen, t, dwell, extras=()):
+        """Emit view, interactions (offset_ms, type, element, kw), leave. Returns end time."""
+        add(t, "screen_view", screen)
+        for off, et, el, kw in extras:
+            add(t + timedelta(milliseconds=min(off, dwell - 1)), et, screen, el, **kw)
+        # Activity heartbeat: a person who is filling in or reading a screen touches it every 14 to 26 s (scroll or tap on the content).
+        # IDLE_P of the visits go quiet instead, so "no forward progress for 30 s" can mean something. Uses its own generator seeded from
+        # the visit, so the main random stream (and every planted pattern) is unchanged.
+        hb = random.Random(f"{user['uid']}|{t.isoformat()}|{screen}")
+        if screen not in TERMINAL_SCREENS and hb.random() >= IDLE_P:
+            o = hb.uniform(14000, 26000)
+            while o < dwell - 3000:
+                ev.append({"ts": t + timedelta(milliseconds=o), "type": "click", "screen": screen, "element": "content"})
+                o += hb.uniform(14000, 26000)
+        t_end = t + timedelta(milliseconds=dwell)
+        if screen not in TERMINAL_SCREENS:      # terminal screens log a view only (the session ends there)
+            add(t_end, "screen_leave", screen, dwell_ms=dwell)
+        out["screens"].add(screen)
+        out["last"] = screen
+        return t_end
+
+    t = t0
+    for i, screen in enumerate(path):
+        med, sig, focus, cta = SPEC[screen]
+        dwell = lognorm(rng, med, sig)
+        extras = []
+        fr = lambda a, b: int(dwell * rng.uniform(a, b))
+        if focus and rng.random() < 0.25:
+            for k, el in enumerate(focus):
+                extras.append((fr(.05 + .1 * k, .3 + .1 * k), "form_focus", el, {}))
+        if screen == "product_list":
+            extras.append((fr(.5, .8), "click", f"product_{product}", {}))
+        elif cta and rng.random() < 0.4:
+            extras.append((fr(.85, .95), "click", cta, {}))
+        if screen == "otp" and ver == "5.3":
+            for x in extras:
+                x[3]["sms_route_v2"] = "sms"
+        terminal = screen in TERMINAL_SCREENS
+        # --- continue decision
+        p = P_CONT_FRAUD.get(screen, P_CONT.get(screen, 1.0)) if persona == "fraudster" else P_CONT.get(screen, 1.0)
+        if persona != "fraudster" and product and (product, screen) in P_CONT_PRODUCT:
+            p = P_CONT_PRODUCT[(product, screen)]
+        stalled = False
+        reason_back = False
+        if screen == "otp":
+            out["in_otp_window"] = OTP_START <= t < OTP_END
+            if out["in_otp_window"]:
+                stalled = rng.random() < OTP_STALL
+                p = 0.0 if stalled else p
+        if screen == "txn_checkout" and persona == "individual_trader" and product == "send_money":
+            p = P4_CONTINUE
+        cont = True if terminal else rng.random() < p
+        # --- friction
+        if stalled:
+            out["stalled"] = True
+            dwell = lognorm(rng, 55000, .4)
+            k = rng.randint(3, 6)
+            out["rage"] += k
+            extras = [(fr(.1, .2), "form_focus", "otp_input", {})] + \
+                     [(int(dwell * (.25 + .5 * j / k)), "rage_click", "resend", {}) for j in range(k)]
+            if rng.random() < 0.4:
+                extras.append((fr(.8, .9), "error", "otp_input", {"error_code": "otp_timeout"}))
+                out["errors"] += 1
+        elif not cont:
+            if screen == "txn_checkout" and persona == "individual_trader" and product == "send_money":
+                out["p4_fail"] = True
+                r = rng.random()
+                if r < .45:
+                    k = rng.randint(3, 5)
+                    out["rage"] += k
+                    extras += [(fr(.6, .9) + 200 * j, "rage_click", "pay", {}) for j in range(k)]
+                if rng.random() < .40:
+                    out["dead"] += 1
+                    extras.append((fr(.7, .9), "dead_tap", "pay", {}))
+                if rng.random() < .35:
+                    out["errors"] += 1
+                    extras.append((fr(.75, .95), "error", "pay", {"error_code": "gateway_timeout"}))
+            elif persona == "fraudster" and screen in ERROR_CODES and rng.random() < .6:
+                out["errors"] += 1
+                extras.append((fr(.7, .95), "error", None, {"error_code": {"otp": "otp_invalid", "txn_checkout": "promo_rejected", "topup_confirm": "deposit_failed"}.get(screen, ERROR_CODES[screen])}))
+            elif persona != "fraudster" and (product, screen) in PRODUCT_REASON and PRODUCT_REASON[(product, screen)][0] != "natural" and rng.random() < .8:
+                kind, code = PRODUCT_REASON[(product, screen)]
+                if kind == "error":
+                    out["errors"] += 1
+                    extras.append((fr(.7, .95), "error", None, {"error_code": code}))
+                elif kind == "language":
+                    dwell = lognorm(rng, 48000, .3)
+                elif kind == "back":
+                    reason_back = True
+            elif screen == "topup_amount" and persona != "fraudster" and rng.random() < .8:
+                out["errors"] += 1      # the steady drop-off: no table for that party size
+                extras.append((fr(.6, .95), "error", None, {"error_code": ERROR_CODES[screen]}))
+            elif screen in ("personal_data", "tin") and rng.random() < .2:
+                out["errors"] += 1
+                extras.append((fr(.6, .9), "error", None, {"error_code": ERROR_CODES[screen]}))
+        if cont or not stalled:
+            if cta and rng.random() < P_DEAD:
+                out["dead"] += 1
+                extras.append((fr(.8, .9), "dead_tap", cta, {}))
+            if rng.random() < P_RAGE and cta:
+                k = rng.randint(3, 4)
+                out["rage"] += k
+                extras += [(fr(.8, .9) + 250 * j, "rage_click", cta, {}) for j in range(k)]
+        if cont and screen == "otp" and rng.random() < 0.03:
+            out["errors"] += 1
+            extras.append((fr(.4, .6), "error", "otp_input", {"error_code": "otp_invalid"}))
+        t_end = visit(screen, t, dwell, extras)
+        if reason_back and i > 0:
+            add(t_end, "back", screen)
+            out["back"] += 1
+        if stalled and rng.random() < 0.3 and i > 0:      # back to retype the number, then give up
+            add(t_end, "back", screen)
+            out["back"] += 1
+            t_end = visit(path[i - 1], t_end + timedelta(milliseconds=400), lognorm(rng, 5000, .4))
+            t_end = visit(screen, t_end + timedelta(milliseconds=400), lognorm(rng, 30000, .4),
+                          [(8000, "rage_click", "resend", {}), (9000, "rage_click", "resend", {}), (10000, "rage_click", "resend", {})])
+            out["rage"] += 3
+        if not cont:
+            if screen == "otp":
+                out["otp_exit"] = True
+            add(t_end + timedelta(milliseconds=rng.randint(50, 500)), "session_end", screen)
+            return ev, out
+        if terminal:
+            out["completed"] = True
+            add(t_end + timedelta(milliseconds=rng.randint(50, 500)), "session_end", screen)
+            return ev, out
+        if i >= 1 and rng.random() < P_BACK * (2 if persona == "fraudster" else 1):
+            add(t_end, "back", screen)
+            out["back"] += 1
+            t_back = visit(path[i - 1], t_end + timedelta(milliseconds=300), lognorm(rng, 3500, .4))
+            t_end = visit(screen, t_back + timedelta(milliseconds=300), lognorm(rng, 6000, .4),
+                          [(5000, "click", cta, {})] if cta else [])
+        t = t_end + timedelta(milliseconds=rng.randint(300, 2500))
+    return ev, out
+
+
+def render_raw(user: dict, sid: str, e: dict, n: int, rng, ver: str) -> dict:
+    dev = user["dev"]
+    ts = e["ts"]
+    params = {}
+    if e.get("dwell_ms") is not None:
+        params["dwell_ms"] = e["dwell_ms"]
+    for k_src, k_dst in (("error_code", "fail_reason"), ("product", "category"), ("amount", "total"),
+                         ("sms_route_v2", "sms_route_v2"), ("tap_x", "x"), ("tap_y", "y")):
+        if e.get(k_src) is not None:
+            params[k_dst] = e[k_src]
+    rec = {"_dataset": DATASET, "platform": "app", "event_id": f"evt_{n:07d}", "session_id": sid,
+           "user_id": user["uid"], "timestamp": ts.astimezone(JKT).isoformat(timespec="milliseconds"),
+           "action": EVT_APP[e["type"]], "page": SCREEN_RAW[e["screen"]]}
+    if e.get("element"):
+        rec["component"] = e["element"]
+    rec["profile"] = {"tier": user["persona"], "build": ver}
+    rec["device_info"] = {"os": dev["os"], "os_version": dev["os_version"], "model": dev["model"], "device_id": dev["id"]}
+    if params:
+        rec["params"] = params
+    return rec
+
+
+def build(seed: int):
+    rng = random.Random(seed)
+    noise = random.Random(seed + 1)
+    users, devices = make_users_and_devices(rng)
+    pw = {p: product_weights(noise, p) for p, _ in POPULATION}
+    sessions, all_events = [], []     # all_events: (ts, session_no, idx, event, user)
+
+    def run(user, journey, t0, product=None):
+        ev, out = simulate(rng, user, journey, t0, product)
+        sno = len(sessions)
+        out["sno"] = sno
+        silent = False
+        if out["ver"] == "5.3" and "kyc_selfie" in out["screens"] and out["t0"] >= G1_START:
+            out["g1_exposed"] = True
+            silent = rng.random() < G1_DROP
+        out["g1_silent"] = silent
+        if silent:
+            ev = [e for e in ev if e["screen"] != "kyc_selfie"]
+        sessions.append(out)
+        for i, e in enumerate(ev):
+            all_events.append((e["ts"], sno, i, e, user))
+        return out
+
+    for user in users:
+        persona = user["persona"]
+        slots = []     # (journey, product)
+        target = {}
+        if persona == "unregistered":
+            nb = rng.randint(3, 5)
+            target["register"] = 5 + (rng.random() < 0.2)
+            s_u = START + timedelta(days=rng.uniform(-3, 20))          # when this person first shows up
+            first_reg = s_u + timedelta(days=4, hours=rng.uniform(0, 12))
+            browse = [time_between(rng, persona, max(s_u, START), first_reg - timedelta(minutes=10)) for _ in range(nb)]
+            reg = sorted([first_reg] + [time_between(rng, persona, first_reg, END - timedelta(minutes=10))
+                                        for _ in range(target["register"] - 1)])
+            plan = [(t, ("browse", None)) for t in sorted(browse)] + [(t, ("register", None)) for t in reg]
+        else:
+            target = {"register": 1, "login": 5 + (rng.random() < 0.15), "topup": 5 + (rng.random() < 0.15),
+                      "transaction": rng.randint(10, 14) if persona == "individual_trader" else 5 + (rng.random() < 0.15)}
+            slots = [("register", None)] + [(j, None) for j in ("login", "topup", "transaction") for _ in range(target[j])]
+            rng.shuffle(slots)       # the single register-flow session (re-verification) may fall anywhere in the window
+            plan = list(zip(plan_times(rng, persona, len(slots)), slots))
+        done = Counter()
+        for t, (j, _) in plan:
+            prod = rng.choices(PRODUCTS, pw[persona])[0] if j == "transaction" else None
+            out = run(user, j, t, prod)
+            done[j] += out["completed"]
+        for j in target:
+            tries = 0
+            while done[j] < target[j] and tries < 60:
+                tries += 1
+                t = sample_time(rng, persona) if persona != "fraudster" else plan_times(rng, persona, 1)[0]
+                prod = rng.choices(PRODUCTS, pw[persona])[0] if j == "transaction" else None
+                done[j] += run(user, j, t, prod)["completed"]
+    all_events.sort(key=lambda x: (x[0], x[1], x[2]))
+    return users, devices, sessions, all_events
+
+
+def assemble(seed: int, all_events: list, rng, ver_of: list):
+    """Assign ids, then apply the delivery faults that happen after the id is assigned."""
+    rows, dup_events, lost = [], Counter(), Counter()
+    by_day = Counter(e[0].date() for e in all_events)
+    lose_budget = round(G2_LOSS * by_day[G2_DAY.date()])
+    day_idx = [i for i, e in enumerate(all_events) if e[0].date() == G2_DAY.date()]
+    lose = set(rng.sample(day_idx, lose_budget))
+    for n, (ts, sno, i, e, user) in enumerate(all_events, 1):
+        rec = render_raw(user, f"s_{sno + 1:06d}", e, n, rng, ver_of[sno])
+        if n - 1 in lose:
+            lost["lost_rows"] += 1
+            lost[e["type"]] += 1
+            continue
+        rows.append(rec)
+        if user["dev"]["os"] == "android" and G4_START <= ts < G4_END and e["screen"] == "txn_checkout":
+            rows.append(rec)
+            dup_events["duplicated"] += 1
+    return rows, dup_events, lost
+
+
+def rate(num, den):
+    return round(num / den, 4) if den else None
+
+
+def ground_truth(seed, users, devices, sessions, n_rows, dup, lost, n_events_before) -> dict:
+    by_p = Counter(u["persona"] for u in users)
+    dev_users = Counter({d["id"]: len(d["users"]) for d in devices})
+    os_users = Counter(u["dev"]["os"] for u in users)
+    S = sessions
+    comp = defaultdict(Counter)       # uid -> journey -> completed
+    for s in S:
+        comp[s["user"]][s["journey"]] += s["completed"]
+    min_done = {}
+    for j in ("register", "login", "topup", "transaction"):
+        who = [u for u in users if (u["persona"] == "unregistered") == (j == "register")]
+        min_done[j] = min(comp[u["uid"]][j] for u in who)
+    reached = lambda scr, grp: [s for s in grp if scr in s["screens"]]
+    exits_at = lambda scr, grp: sum(s["last"] == scr for s in grp)
+
+    pd = reached("personal_data", S)
+    tin = reached("tin", S)
+    tc = reached("topup_amount", [s for s in S if s["persona"] != "fraudster"])
+    ctrl = {"topup_amount_exit_rate": rate(exits_at("topup_amount", tc), len(tc)), "topup_amount_sessions": len(tc),
+            "topup_amount_exit_rate_by_persona": {p: rate(exits_at("topup_amount", [s for s in tc if s["persona"] == p]), len([s for s in tc if s["persona"] == p])) for p in by_p if p != "fraudster"},
+            "personal_data_exit_rate": rate(exits_at("personal_data", pd), len(pd)), "personal_data_sessions": len(pd),
+            "tin_exit_rate": rate(exits_at("tin", tin), len(tin)), "tin_sessions": len(tin)}
+
+    otp = reached("otp", S)
+    inw = [s for s in otp if s["in_otp_window"]]
+    outw = [s for s in otp if not s["in_otp_window"]]
+    p1 = {"window_utc": [iso_ms(OTP_START), iso_ms(OTP_END)], "otp_sessions_in_window": len(inw),
+          "stall_share_in_window": rate(sum(s["stalled"] for s in inw), len(inw)),
+          "otp_exit_rate_in_window": rate(exits_at("otp", inw), len(inw)),
+          "otp_exit_rate_outside": rate(exits_at("otp", outw), len(outw)), "otp_sessions_outside": len(outw),
+          "resend_rage_taps_in_window": sum(s["rage"] for s in inw if s["stalled"])}
+
+    tops = [s for s in reached("topup_confirm", S)]
+    lb = [s for s in tops if s["persona"] == "large_business"]
+    oth = [s for s in tops if s["persona"] != "large_business"]
+    p2 = {"threshold_php": TOPUP_BIG_MIN, "large_business_topups": len(lb),
+          "large_business_share_above_threshold": rate(sum(s["amount"] > TOPUP_BIG_MIN for s in lb), len(lb)),
+          "large_business_median_php": int(median(s["amount"] for s in lb)),
+          "others_topups": len(oth), "others_max_php": max(s["amount"] for s in oth),
+          "others_median_php": int(median(s["amount"] for s in oth)),
+          "others_share_above_5000": rate(sum(s["amount"] > 5000 for s in oth), len(oth))}
+
+    tx = [s for s in S if s["journey"] == "transaction"]
+    share = {p: rate(sum(s["product"] == "eload" for s in tx if s["persona"] == p), len([s for s in tx if s["persona"] == p])) for p in by_p if p != "unregistered"}
+    pers_top = {p: max(((rate(sum(s["product"] == q for s in tx if s["persona"] == p), len([s for s in tx if s["persona"] == p])), q) for q in PRODUCTS)) for p in share}
+    p3 = {"persona": "sari_sari", "product": "eload", "eload_share_sari_sari": share["sari_sari"],
+          "eload_share_by_persona": share, "top_product_share_by_persona": {p: list(v) for p, v in pers_top.items()},
+          "transactions_sari_sari": len([s for s in tx if s["persona"] == "sari_sari"])}
+
+    co = [s for s in reached("txn_checkout", S)]
+    tr = [s for s in co if s["persona"] == "individual_trader" and s["product"] == "send_money"]
+    others = [s for s in co if not (s["persona"] == "individual_trader" and s["product"] == "send_money")]
+    p4 = {"segment_sessions_at_checkout": len(tr), "segment_abandon_rate": rate(exits_at("txn_checkout", tr), len(tr)),
+          "others_abandon_rate": rate(exits_at("txn_checkout", others), len(others)),
+          "trader_other_products_abandon_rate": rate(exits_at("txn_checkout", [s for s in co if s["persona"] == "individual_trader" and s["product"] != "send_money"]), len([s for s in co if s["persona"] == "individual_trader" and s["product"] != "send_money"])),
+          "send_money_other_personas_abandon_rate": rate(exits_at("txn_checkout", [s for s in co if s["persona"] != "individual_trader" and s["product"] == "send_money"]), len([s for s in co if s["persona"] != "individual_trader" and s["product"] == "send_money"]))}
+
+    fr = [s for s in S if s["persona"] == "fraudster"]
+    nf = [s for s in S if s["persona"] != "fraudster" and s["journey"] != "browse"]
+    fr_dev = [d for d in devices if any(u in {x["uid"] for x in users if x["persona"] == "fraudster"} for u in d["users"])]
+    odd = sum((s["t0"].hour + 7) % 24 < 6 for s in fr)
+    fail = lambda g: rate(sum(not s["completed"] for s in g), len(g))
+    m1 = {"fraudster_users": by_p["fraudster"], "sessions": len(fr), "failed_session_rate": fail(fr),
+          "others_failed_session_rate": fail(nf), "odd_hour_share_00_06_wib": rate(odd, len(fr)),
+          "devices_used": len(fr_dev), "max_users_per_fraud_device": max(len(d["users"]) for d in fr_dev),
+          "abandon_rate_checkout": rate(exits_at("txn_checkout", [s for s in co if s["persona"] == "fraudster"]), len([s for s in co if s["persona"] == "fraudster"])),
+          "abandon_rate_topup_confirm": rate(exits_at("topup_confirm", [s for s in tops if s["persona"] == "fraudster"]), len([s for s in tops if s["persona"] == "fraudster"])),
+          "otp_exit_rate": rate(exits_at("otp", [s for s in otp if s["persona"] == "fraudster"]), len([s for s in otp if s["persona"] == "fraudster"]))}
+
+    pr = [s for s in S if s["journey"] == "browse"]
+    by_user = Counter(s["user"] for s in pr)
+    first_reg = {}
+    for s in S:
+        if s["journey"] == "register" and s["persona"] == "unregistered":
+            first_reg[s["user"]] = min(first_reg.get(s["user"], s["t0"]), s["t0"])
+    before = Counter(s["user"] for s in pr if s["t0"] < first_reg.get(s["user"], END))
+    pricing_all = reached("prices", S)
+    m2 = {"unregistered_users": by_p["unregistered"], "price_sessions": len(pr), "price_session_exit_rate": rate(exits_at("prices", pricing_all), len(pricing_all)),
+          "min_price_sessions_per_user": min(by_user.values()), "users_with_3plus_price_sessions_before_first_register": sum(v >= 3 for v in before.values())}
+
+    kyc = [s for s in S if s.get("g1_exposed")]
+    g1 = {"screen": "kyc_selfie", "app_version": "5.3", "silent_from_utc": iso_ms(G1_START),
+          "first_exposed_session_utc": iso_ms(min(s["t0"] for s in kyc)),
+          "first_silent_session_utc": iso_ms(min(s["t0"] for s in kyc if s["g1_silent"])),
+          "sessions_exposed": len(kyc), "sessions_silent": sum(s["g1_silent"] for s in kyc),
+          "measured_drop": rate(sum(s["g1_silent"] for s in kyc), len(kyc)), "planted_drop": G1_DROP}
+    otp_v2 = [s for s in S if s["ver"] == "5.3" and "otp" in s["screens"]]
+    span_h = (END - V412_DATE).total_seconds() / 3600
+    g3 = {"property": "sms_route_v2", "since_utc": iso_ms(V412_DATE), "events": None, "events_per_hour": None,
+          "sessions_with_property": len(otp_v2)}
+    return {
+        "dataset": DATASET, "synthetic": True, "seed": seed,
+        "label": "SYNTHETIC DATA: generated by pipeline/generate_dining.py, not real users",
+        "window_utc": [iso_ms(START), iso_ms(END)],
+        "counts": {"users": len(users), "sessions": len(S), "events_written": n_rows, "events_before_loss": n_events_before,
+                   "sessions_by_journey": dict(Counter(s["journey"] for s in S))},
+        "population": {"users_by_persona": dict(by_p), "registered": len(users) - by_p["unregistered"],
+                       "android_users": os_users["android"], "ios_users": os_users["ios"],
+                       "android_share": rate(os_users["android"], len(users)), "devices": len(devices),
+                       "max_users_per_device": max(dev_users.values()),
+                       "devices_with_more_than_one_user": sum(v > 1 for v in dev_users.values()),
+                       "device_classes": dict(Counter(d["cls"] for d in devices)),
+                       "min_completed_attempts": min_done},
+        "control": ctrl, "_g3": g3, "_span_h": span_h,
+        "measured": {"P1": p1, "P2": p2, "P3": p3, "P4": p4, "M1": m1, "M2": m2},
+        "faults": {"G1": g1, "G2": {"day_utc": G2_DAY.date().isoformat(), "planted_loss": G2_LOSS, "rows_lost": lost["lost_rows"]},
+                   "G3": g3, "G4": {"screen": "txn_checkout", "os": "android", "from_utc": iso_ms(G4_START), "to_utc": iso_ms(G4_END),
+                                    "duplicated_events": dup["duplicated"], "fixed_in": "5.2.2", "status": "resolved"}},
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--out", default="data/dining")
+    args = ap.parse_args()
+
+    users, devices, sessions, all_events = build(args.seed)
+    rng = random.Random(args.seed + 2)
+    day_total = sum(e[0].date() == G2_DAY.date() for e in all_events)
+    rows, dup, lost = assemble(args.seed, all_events, rng, [s["ver"] for s in sessions])
+    gt = ground_truth(args.seed, users, devices, sessions, len(rows), dup, lost, len(all_events))
+    gt["faults"]["G2"]["events_that_day_before_loss"] = day_total
+    gt["faults"]["G2"]["measured_loss"] = rate(lost["lost_rows"], day_total)
+    gt["faults"]["G2"]["lost_by_event_type"] = {k: v for k, v in lost.items() if k != "lost_rows"}
+    g3 = gt.pop("_g3")
+    span_h = gt.pop("_span_h")
+    n_prop = sum(1 for r in rows if "sms_route_v2" in r.get("params", {}))
+    g3["events"] = n_prop
+    g3["events_per_hour"] = round(n_prop / span_h, 2)
+    gt["faults"]["G3"] = g3
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    with open(out / "events_raw.jsonl", "w", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(r, separators=(",", ":")) + "\n")
+    add_expectations(gt)
+    (out / "ground_truth.json").write_text(json.dumps(gt, indent=2) + "\n", encoding="utf-8")
+    size = (out / "events_raw.jsonl").stat().st_size / 1e6
+    print(f"{len(sessions)} sessions, {len(rows)} events, {size:.1f} MB -> {out}/events_raw.jsonl")
+    print(json.dumps({k: gt[k] for k in ("counts", "population")}, indent=2))
+
+
+def add_expectations(gt: dict) -> None:
+    m, f = gt["measured"], gt["faults"]
+    gt["must_flag"] = [
+        {"id": "P1_otp_not_delivered", "kind": "problem", "screen": "otp", "scope": "burst",
+         "segment": "all users (register and login), time window", "window_utc": m["P1"]["window_utc"],
+         "expected_class": "technical_fault", "expected_signal": "drop-off and resend rage taps on the otp screen, only inside the window",
+         "measured": m["P1"]},
+        {"id": "P4_trader_send_money_checkout", "kind": "problem", "screen": "txn_checkout", "scope": "segment",
+         "segment": {"persona": "individual_trader", "product": "send_money"},
+         "expected_class": "technical_bug_or_ux_friction",
+         "expected_signal": "abandon at checkout far above everyone else, with rage taps, dead taps and gateway_timeout errors",
+         "measured": m["P4"]},
+        {"id": "M1_fraudster_bursts", "kind": "problem", "screen": "any", "scope": "segment", "segment": {"persona": "fraudster"},
+         "expected_class": "unclassified_needs_review",
+         "expected_signal": "failed attempts in bursts at odd hours, up to 5 users per device",
+         "measured": m["M1"]},
+    ]
+    gt["must_flag_patterns"] = [
+        {"id": "P2_large_business_topup_amount", "kind": "pattern", "persona": "large_business", "threshold_php": TOPUP_BIG_MIN,
+         "expected_class": "behavior_pattern", "measured": m["P2"]},
+        {"id": "P3_sari_sari_eload", "kind": "pattern", "persona": "sari_sari", "product": "eload",
+         "expected_class": "behavior_pattern", "measured": m["P3"]},
+    ]
+    gt["must_not_flag_as_problem"] = [
+        {"id": "M2_unregistered_price_checks", "screen": "prices", "expected_class": "natural_exit", "measured": m["M2"]},
+        {"id": "P3_sari_sari_eload", "note": "expected behavior, listed as a pattern only"},
+        {"id": "P2_large_business_topup_amount", "note": "behavior pattern, listed as a pattern only"},
+        {"id": "control_reservation_failed", "screens": ["topup_amount"], "note": "steady drop-off all window (reservation failed), every persona; not a candidate",
+         "measured": gt["control"]},
+    ]
+    gt["guardian_must_catch"] = [
+        {"id": "G1_kyc_selfie_tracker_silent", "expected_status": "active", **f["G1"]},
+        {"id": "G2_missing_partition", "expected_status": "active", **f["G2"]},
+        {"id": "G3_unmapped_property", "expected_status": "active", **f["G3"]},
+        {"id": "G4_checkout_double_fire", "expected_status": "resolved", **f["G4"]},
+    ]
+
+
+if __name__ == "__main__":
+    main()

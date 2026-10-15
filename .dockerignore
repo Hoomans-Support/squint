@@ -1,0 +1,17 @@
+# Root ignore file, only matters if someone builds from the project root. The real image is built from app/
+# (app/Dockerfile, app/.dockerignore, app/.gcloudignore), which uploads only server.py, requirements and static/.
+data/
+pipeline/
+*.jsonl
+.venv/
+__pycache__/
+*.pyc
+*.docx
+*.zip
+*.md
+.git/
+.env
+.env.*
+hello/
+app/static.bak-*/
+app/tests/

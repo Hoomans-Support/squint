@@ -1,0 +1,53 @@
+{
+  "dataset": "synthetic-v1",
+  "detect": {
+    "web": {"path": "src", "equals": "web"},
+    "app": {"path": "platform", "equals": "app"}
+  },
+  "maps": {
+    "web_screens": {"/": "home", "/signup": "signup", "/verify/identity": "kyc_identity", "/connect-bank": "connect_bank", "/pricing": "pricing", "/dashboard": "dashboard"},
+    "app_screens": {"HomeScreen": "home", "SignupScreen": "signup", "KycIdentityScreen": "kyc_identity", "ConnectBankScreen": "connect_bank", "PricingScreen": "pricing", "DashboardScreen": "dashboard"},
+    "web_events": {"page_view": "screen_view", "page_hide": "screen_leave", "click": "click", "input_focus": "form_focus", "scroll": "scroll", "rage_click": "rage_click", "error": "error", "session_end": "session_end"},
+    "app_events": {"screen_view": "screen_view", "screen_exit": "screen_leave", "tap": "click", "field_focus": "form_focus", "scroll": "scroll", "rage_tap": "rage_click", "error": "error", "app_background": "session_end"}
+  },
+  "sources": {
+    "web": {
+      "platform": {"const": "web"},
+      "event_id": "id",
+      "session_id": "sid",
+      "user_id": "uid",
+      "ts": {"path": "t", "transform": "epoch_ms"},
+      "event_type": {"path": "evt", "map": "web_events"},
+      "screen": {"path": "url_path", "map": "web_screens"},
+      "element": "el",
+      "persona": "user.persona",
+      "os": "ctx.os",
+      "os_version": "ctx.os_version",
+      "device_model": "ctx.device_model",
+      "viewport_w": "ctx.viewport.w",
+      "dwell_ms": "props.dwell_ms",
+      "scroll_depth": {"path": "props.scroll_pct", "transform": "pct_to_ratio"},
+      "error_code": "props.err",
+      "dataset": "_dataset"
+    },
+    "app": {
+      "platform": {"const": "app"},
+      "event_id": "event_id",
+      "session_id": "session_id",
+      "user_id": "user_id",
+      "ts": {"path": "timestamp", "transform": "iso8601"},
+      "event_type": {"path": "event_name", "map": "app_events"},
+      "screen": {"path": "screen_name", "map": "app_screens"},
+      "element": "target",
+      "persona": "user_properties.segment",
+      "os": "device_info.os",
+      "os_version": "device_info.os_version",
+      "device_model": "device_info.model",
+      "viewport_w": "device_info.screen_w",
+      "dwell_ms": "params.time_on_screen_ms",
+      "scroll_depth": "params.scroll_ratio",
+      "error_code": "params.error_code",
+      "dataset": "_dataset"
+    }
+  }
+}

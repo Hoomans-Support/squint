@@ -1,0 +1,6 @@
+# Pipeline dependencies. generate, normalize, guardian and watchdog use only the standard library.
+# Only the Diagnostic Agent / Gemini check needs this package (pulls in google-auth, httpx, pydantic, etc.).
+# Tested with Python 3.11.
+google-genai==2.30.1
+# Only for the optional BigQuery source of the wallet sample (pipeline/bq_source.py, pipeline.py --source bigquery).
+google-cloud-bigquery==3.27.0

@@ -1,0 +1,15 @@
+{
+  "synthetic": true,
+  "note": "Synthetic sample data. Read by the pipeline with the builder's credentials; visitors do not log in and cannot query it.",
+  "dataset": "squint_samples",
+  "table": "wallet_events",
+  "location": "us-central1",
+  "rows": 205189,
+  "sessions": 18870,
+  "first_event": "2026-09-15T00:00:05Z",
+  "last_event": "2026-10-14T23:55:12Z",
+  "size_bytes": 94961455,
+  "read_job_id": "01938d73-59f9-485f-a2a8-d7100ee14e74",
+  "bytes_billed": 0,
+  "read_at": "2026-10-15T10:43:13Z"
+}

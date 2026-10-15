@@ -1,0 +1,112 @@
+/* Squint first-visit intro: one continuous ~9 s movement, then it rests on the end card.
+   Uses the app's CSS variables when present; font is the app's Inter (declared by the host page); ticker uses system monospace. */
+.sx { --sx-bg: var(--panel, #fff); --sx-ink: var(--ink, #1D1D1F); --sx-ink-3: var(--ink-3, #6E6E73); --sx-line: var(--line, #E5E5EA);
+  --sx-accent: var(--accent, #0071E3); --sx-chip: var(--chip, #F1F1F4);
+  --sx-red: #D93025; --sx-green: #1E8E3E;
+  position: fixed; inset: 0; z-index: 1000; background: var(--sx-bg); color: var(--sx-ink); overflow: hidden;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; display: grid; }
+.sx * { box-sizing: border-box; }
+.sx-mono { font-family: ui-monospace, 'Cascadia Mono', Consolas, Menlo, monospace; }
+.sx h2 { margin: 0; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-size: clamp(26px, 4.4vw, 48px); }
+
+/* top bar: the Squint logo and a home icon both go to the dashboard */
+.sx-bar { position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; padding: 14px clamp(12px, 3vw, 28px); }
+.sx-brand, .sx-home { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; border-radius: 12px; min-height: 44px; }
+.sx-brand { padding: 4px 10px 4px 4px; font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+.sx-brand img { width: 32px; height: 32px; border-radius: 8px; }
+.sx-home { width: 44px; justify-content: center; border: 1px solid var(--sx-line); border-radius: 50%; background: var(--sx-bg); }
+.sx-home svg { width: 20px; height: 20px; }
+.sx-brand:hover, .sx-home:hover { background: var(--sx-chip); }
+.sx-brand:focus-visible, .sx-home:focus-visible, .sx-go:focus-visible { outline: 3px solid var(--sx-accent); outline-offset: 3px; }
+
+.sx-layer { grid-area: 1 / 1; display: flex; flex-direction: column; justify-content: center; min-height: 0; overflow: hidden;
+  padding: clamp(64px, 10vh, 100px) clamp(16px, 5vw, 72px) clamp(32px, 6vh, 64px); }
+.sx-note { font-size: 12px; color: var(--sx-ink-3); }
+
+/* timeline (all in seconds from load): 0-3.4 trackers | 3.2-6.6 split | 6.6-... end card */
+.sx-l1 { animation: sx-l1 9s both; }
+.sx-l2 { animation: sx-l2 9s both; }
+@keyframes sx-l1 { 0% { opacity: 0; } 4%, 34% { opacity: 1; } 40%, 100% { opacity: 0; visibility: hidden; } }
+@keyframes sx-l2 { 0%, 33% { opacity: 0; } 40%, 70% { opacity: 1; } 76%, 100% { opacity: 0; visibility: hidden; } }
+
+/* layer 1: trackers (centred stack: counter, headline, two ticker rows) */
+.sx-l1 { align-items: center; text-align: center; gap: 12px; }
+.sx-count-l { font-size: 14px; color: var(--sx-ink-3); }
+.sx-count { height: 1.1em; overflow: hidden; font-size: clamp(44px, 8vw, 88px); font-weight: 700; line-height: 1.1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.sx-count-in { display: flex; flex-direction: column; animation: sx-roll 3s steps(4) .2s both; }
+.sx-count-in span { height: 1.1em; overflow: hidden; }
+@keyframes sx-roll { to { transform: translateY(-80%); } }
+.sx-green { color: var(--sx-green); }
+.sx-l1 h2 { font-size: clamp(28px, 5vw, 56px); margin-bottom: clamp(16px, 4vh, 40px); }
+.sx-bands { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.sx-ticker { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.sx-ticker-in { display: flex; gap: 10px; width: max-content; font-size: clamp(11px, 1.2vw, 13px); animation: sx-slide 4s linear both; }
+.sx-ticker.rev .sx-ticker-in { animation-name: sx-slide-r; }
+.sx-ticker-in span { background: var(--sx-chip); border-radius: 8px; padding: 8px 14px; white-space: nowrap; }
+.sx-ticker-in .t-b { background: #E8F0FE; color: #174EA6; } .sx-ticker-in .t-y { background: #FEF7E0; color: #8A5A00; }
+.sx-ticker-in .t-r { background: #FCE8E6; color: #A50E0E; } .sx-ticker-in .t-g { background: #E6F4EA; color: #137333; }
+@keyframes sx-slide { to { transform: translateX(-50%); } }
+@keyframes sx-slide-r { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+
+/* layer 2: straight lines vs real users */
+.sx-l2 { gap: clamp(14px, 3vh, 26px); align-items: center; text-align: center; }
+.sx-l2 > * { width: 100%; max-width: 980px; }
+.sx-l2 h2 { font-size: clamp(26px, 4.6vw, 52px); }
+.sx-split { display: grid; grid-template-columns: 1fr 1px 1fr; gap: clamp(12px, 3vw, 32px); align-items: center; }
+.sx-split > div { min-width: 0; }
+.sx-split .sx-rule { width: 1px; height: 80%; background: var(--sx-line); align-self: stretch; }
+.sx-cap { font-size: 13px; color: var(--sx-ink-3); margin-bottom: 6px; text-align: center; }
+.sx-split svg { display: block; width: 100%; height: auto; max-height: 36vh; }
+.sx-split text { font-family: inherit; font-size: 13px; fill: var(--sx-ink-3); }
+.sx-split text.sx-loop-lab { fill: var(--sx-red); }
+.sx-loop { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: sx-draw 2.6s ease-in-out 3.5s both; }
+@keyframes sx-draw { to { stroke-dashoffset: 0; } }
+.sx-sql { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
+.sx-sql .sx-q { font-size: clamp(11px, 1.2vw, 12px); background: var(--sx-chip); border-radius: 10px; padding: 10px 14px; --r: 0deg; animation: sx-drop .6s ease-out both; }
+.sx-sql .sx-q:nth-child(1) { animation-delay: 4.3s; } .sx-sql .sx-q:nth-child(2) { animation-delay: 4.7s; } .sx-sql .sx-q:nth-child(3) { animation-delay: 5.1s; }
+.sx-sql .sx-req { margin-left: 0; background: #FCE8E6; color: #A50E0E; border-radius: 20px; padding: 8px 16px; font-size: 14px; font-weight: 600; animation: sx-pop .5s ease-out 5.6s both, sx-pulse 1.4s ease-in-out 6.1s infinite; }
+@keyframes sx-drop { from { opacity: 0; transform: translateY(-40px) rotate(0); } to { opacity: 1; transform: translateY(0) rotate(var(--r)); } }
+@keyframes sx-pop { from { opacity: 0; transform: scale(.6); } }
+@keyframes sx-pulse { 50% { transform: scale(1.07); } }
+.sx-l2 h2 { animation: sx-rise .6s ease-out 3.4s both; }
+@keyframes sx-rise { from { opacity: 0; transform: translateY(18px); } }
+
+/* layer 3: end card, stays */
+.sx-l3 { align-items: center; text-align: center; gap: clamp(14px, 3vh, 26px); }
+.sx-l3 h2 { font-size: clamp(32px, 6.4vw, 72px); letter-spacing: -.03em; max-width: 14em; animation: sx-rise .7s cubic-bezier(.2, .8, .2, 1) .05s both; }
+.sx-l3 h2 em { font-style: normal; color: var(--sx-accent); }
+.sx-lockup { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; animation: sx-rise .7s cubic-bezier(.2, .8, .2, 1) .3s both; }
+.sx-lockup img { width: 44px; height: 44px; border-radius: 10px; }
+.sx-lockup b { font-size: clamp(26px, 3.4vw, 36px); letter-spacing: -.02em; }
+.sx-lockup span { color: var(--sx-ink-3); font-size: clamp(15px, 1.8vw, 20px); }
+.sx-go { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 12px; min-height: 64px; padding: 0 40px; border: 0; border-radius: 999px; color: var(--accent-fg, #fff); font-weight: 700; font-size: 21px; line-height: 1; font-family: inherit; letter-spacing: -.01em; cursor: pointer;
+  background: linear-gradient(135deg, var(--sx-accent), #7C5CFF); box-shadow: 0 12px 32px rgba(0, 113, 227, .45), 0 2px 6px rgba(0, 0, 0, .15);
+  animation: sx-spring .6s cubic-bezier(.3, 1.6, .5, 1) .55s both, sx-bob 2.4s ease-in-out 1.3s infinite; transition: transform .15s ease, box-shadow .15s ease; }
+.sx-go::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .45), transparent); animation: sx-shine 2.8s ease-in-out 1.5s infinite; }
+.sx-go:hover { transform: scale(1.06); box-shadow: 0 16px 40px rgba(0, 113, 227, .55), 0 2px 6px rgba(0, 0, 0, .15); }
+.sx-arr { font-style: normal; font-size: 24px; display: inline-block; animation: sx-nudge 1.2s ease-in-out 1.3s infinite; }
+@keyframes sx-bob { 50% { transform: translateY(-4px); } }
+@keyframes sx-shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+@keyframes sx-nudge { 50% { transform: translateX(5px); } }
+@keyframes sx-spring { from { opacity: 0; transform: scale(.7); } }
+.sx-l3 { visibility: visible; }
+@keyframes sx-show { to { visibility: visible; } }
+
+@media (max-width: 700px) {
+  .sx-split { grid-template-columns: 1fr; }
+  .sx-split .sx-rule { display: none; }
+}
+/* reduced motion (and the static state): only the end card, no movement */
+.sx[data-static] .sx-l1, .sx[data-static] .sx-l2 { display: none; }
+.sx[data-static] *, .sx[data-static] *::before { animation: none !important; }
+.sx[data-static] .sx-l3 { visibility: visible; }
+/* the page behind the intro waits: chart animations start when it closes */
+body.sx-open #view * { animation-play-state: paused !important; }
+/* dark theme: pastel chips and low-contrast reds and greens get dark-appropriate colours */
+:root[data-theme="dark"] .sx { --sx-red: #FF6B63; --sx-green: #4ADE80; }
+:root[data-theme="dark"] .sx-ticker-in .t-b { background: rgba(77,163,255,.18); color: #9CCBFF; }
+:root[data-theme="dark"] .sx-ticker-in .t-y { background: rgba(249,171,0,.16); color: #FDD663; }
+:root[data-theme="dark"] .sx-ticker-in .t-r { background: rgba(255,69,58,.18); color: #FF9F99; }
+:root[data-theme="dark"] .sx-ticker-in .t-g { background: rgba(48,209,88,.16); color: #86E3A5; }
+:root[data-theme="dark"] .sx-sql .sx-req { background: rgba(255,69,58,.2); color: #FFA39D; }
+:root[data-theme="dark"] .sx-split line { stroke: #6E6E73; }

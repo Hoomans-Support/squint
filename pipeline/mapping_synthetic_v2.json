@@ -1,0 +1,161 @@
+{
+ "dataset": "synthetic-v2",
+ "keep_raw": false,
+ "detect": {
+  "app": {
+   "path": "platform",
+   "equals": "app"
+  }
+ },
+ "maps": {
+  "app_screens": {
+   "PricesScreen": "prices",
+   "WelcomeScreen": "welcome",
+   "RegisterPhoneScreen": "register_phone",
+   "LoginPhoneScreen": "login_phone",
+   "OtpScreen": "otp",
+   "PersonalDataScreen": "personal_data",
+   "TinScreen": "tin",
+   "KycSelfieScreen": "kyc_selfie",
+   "RegisterDoneScreen": "register_done",
+   "HomeScreen": "home",
+   "WalletScreen": "wallet",
+   "TopupAmountScreen": "topup_amount",
+   "TopupConfirmScreen": "topup_confirm",
+   "TopupDoneScreen": "topup_done",
+   "ProductListScreen": "product_list",
+   "TxnDetailsScreen": "txn_details",
+   "TxnCheckoutScreen": "txn_checkout",
+   "TxnDoneScreen": "txn_done"
+  },
+  "app_events": {
+   "screen_view": "screen_view",
+   "screen_exit": "screen_leave",
+   "tap": "click",
+   "field_focus": "form_focus",
+   "rage_tap": "rage_click",
+   "dead_tap": "dead_tap",
+   "back_press": "back",
+   "error": "error",
+   "app_background": "session_end"
+  },
+  "app_steps": {
+   "PricesScreen": "browse",
+   "WelcomeScreen": "start",
+   "RegisterPhoneScreen": "phone",
+   "LoginPhoneScreen": "phone",
+   "OtpScreen": "otp",
+   "PersonalDataScreen": "personal_data",
+   "TinScreen": "tin",
+   "KycSelfieScreen": "kyc",
+   "RegisterDoneScreen": "done",
+   "HomeScreen": "done",
+   "WalletScreen": "start",
+   "TopupAmountScreen": "amount",
+   "TopupConfirmScreen": "confirm",
+   "TopupDoneScreen": "done",
+   "ProductListScreen": "product",
+   "TxnDetailsScreen": "details",
+   "TxnCheckoutScreen": "checkout",
+   "TxnDoneScreen": "done"
+  },
+  "device_models": {
+   "Redmi 9A": "android_low",
+   "Samsung Galaxy A03": "android_low",
+   "Infinix Smart 6": "android_low",
+   "Realme C11": "android_low",
+   "Oppo A15": "android_low",
+   "Vivo Y12": "android_low",
+   "Samsung Galaxy S23": "android_mid",
+   "Pixel 7": "android_mid",
+   "Xiaomi 13": "android_mid",
+   "Oppo Reno 10": "android_mid",
+   "Samsung Galaxy A54": "android_mid",
+   "iPhone 11": "ios",
+   "iPhone 12": "ios",
+   "iPhone 13": "ios",
+   "iPhone 14": "ios",
+   "iPhone 15": "ios"
+  }
+ },
+ "known_props": {
+  "app": {
+   "": [
+    "_dataset",
+    "platform",
+    "event_id",
+    "session_id",
+    "user_id",
+    "timestamp",
+    "event_name",
+    "screen_name",
+    "target",
+    "user_properties",
+    "device_info",
+    "params"
+   ],
+   "user_properties": [
+    "segment",
+    "app_version"
+   ],
+   "device_info": [
+    "os",
+    "os_version",
+    "model",
+    "device_id"
+   ],
+   "params": [
+    "time_on_screen_ms",
+    "error_code",
+    "product",
+    "amount",
+    "tap_x",
+    "tap_y"
+   ]
+  }
+ },
+ "sources": {
+  "app": {
+   "platform": {
+    "const": "app"
+   },
+   "event_id": "event_id",
+   "session_id": "session_id",
+   "user_id": "user_id",
+   "ts": {
+    "path": "timestamp",
+    "transform": "iso8601"
+   },
+   "event_type": {
+    "path": "event_name",
+    "map": "app_events"
+   },
+   "screen": {
+    "path": "screen_name",
+    "map": "app_screens"
+   },
+   "step": {
+    "path": "screen_name",
+    "map": "app_steps"
+   },
+   "element": "target",
+   "persona": "user_properties.segment",
+   "app_version": "user_properties.app_version",
+   "os": "device_info.os",
+   "os_version": "device_info.os_version",
+   "device_model": "device_info.model",
+   "device_class": {
+    "path": "device_info.model",
+    "map": "device_models"
+   },
+   "device_id": "device_info.device_id",
+   "product": "params.product",
+   "amount_php": "params.amount",
+   "dwell_ms": "params.time_on_screen_ms",
+   "error_code": "params.error_code",
+   "dataset": "_dataset",
+   "tap_x": "params.tap_x",
+   "tap_y": "params.tap_y"
+  }
+ }
+}
