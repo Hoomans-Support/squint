@@ -1,50 +1,49 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Loading</title>
+<title>Squint</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="app.css">
-<link rel="stylesheet" href="intro.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;700&amp;family=Roboto:wght@400;500;700&amp;family=Roboto+Mono:wght@400&amp;display=swap">
+<link rel="stylesheet" href="sq/proto.css">
+<link rel="stylesheet" href="sq/squint.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<header class="hdr" id="hdr">
-  <a class="brand" id="brand" href="#overview">
-    <img class="logo" id="logo" src="logo.svg" alt="" width="32" height="32">
-    <span class="brand-name" id="brand-name"></span>
-  </a>
-  <div class="hdr-tools">
-    <div class="fgroup" id="g-dataset" hidden><span class="flabel" id="l-dataset">Sample data</span><div class="seg" id="dataset" role="radiogroup" aria-labelledby="l-dataset"></div></div>
-    <button type="button" class="iconbtn" id="theme"></button>
-  </div>
-</header>
-
-<div class="fbar" id="fbar" aria-label="Filters">
-  <div class="fgroup" id="g-platform" hidden><span class="flabel" id="l-platform">Platform</span><div class="seg" id="platform" role="radiogroup" aria-labelledby="l-platform"></div></div>
-  <div class="fgroup"><span class="flabel" id="l-range">Timeframe</span><div class="seg" id="range" role="radiogroup" aria-labelledby="l-range"></div></div>
-  <div class="fgroup"><span class="flabel" id="l-persona">User group</span><div class="seg seg-wrap" id="persona" role="group" aria-labelledby="l-persona"></div></div>
-</div>
-
-<div class="shell">
-  <nav class="side" aria-label="Sections">
-    <div class="navlist" id="navlist"></div>
-    <div class="src" id="src"></div>
-  </nav>
-  <main class="page" id="main" tabindex="-1">
-    <div id="view"></div>
-    <footer class="foot" id="foot"></footer>
-  </main>
-</div>
-
-<div class="scrim" id="scrim" hidden></div>
-<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden></aside>
-<div class="sr" id="announce" aria-live="polite"></div>
-<script src="intro.js"></script>
-<script src="intro-boot.js"></script>
-<script src="brand.js"></script>
-<script src="flowcheck.js"></script>
-<script src="app.js"></script>
+<div id="app"></div>
+<script src="sq/runtime.js"></script>
+<script src="sq/data.js"></script>
+<script src="sq/data-ask.js"></script>
+<script src="sq/data-journeys.js"></script>
+<script src="sq/data-audiences.js"></script>
+<script src="sq/data-main.js"></script>
+<script src="sq/data-persona-compare.js"></script>
+<script src="sq/data-drawer.js"></script>
+<script src="sq/c/Ask.js"></script>
+<script src="sq/c/AskFlow1.js"></script>
+<script src="sq/c/AskFlow2.js"></script>
+<script src="sq/c/AskFlow3.js"></script>
+<script src="sq/c/AskFlow4.js"></script>
+<script src="sq/c/AskFlow5.js"></script>
+<script src="sq/c/Audiences.js"></script>
+<script src="sq/c/Brief.js"></script>
+<script src="sq/c/Components.js"></script>
+<script src="sq/c/DataSources.js"></script>
+<script src="sq/c/DeckSlide1.js"></script>
+<script src="sq/c/DeckSlide2.js"></script>
+<script src="sq/c/DeckSlide3.js"></script>
+<script src="sq/c/FlowPrototype.js"></script>
+<script src="sq/c/Journeys.js"></script>
+<script src="sq/c/Main.js"></script>
+<script src="sq/c/NavRail.js"></script>
+<script src="sq/c/ProblemDetail.js"></script>
+<script src="sq/c/ProblemDetailP2.js"></script>
+<script src="sq/c/ProblemDetailP3.js"></script>
+<script src="sq/c/PersonaCompare.js"></script>
+<script src="sq/c/ScopeBar.js"></script>
+<script src="sq/c/SessionPlayer.js"></script>
+<script src="sq/c/SessionPlayerForm.js"></script>
+<script src="sq/c/SessionPlayerOTP.js"></script>
+<script src="sq/c/TopBar.js"></script>
 </body>
 </html>

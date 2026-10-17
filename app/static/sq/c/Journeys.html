@@ -1,0 +1,431 @@
+<div style="min-height: 100vh; background: #F8F9FA; color: #202124; font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px">
+  <dc-import name="TopBar" hint-size="100%,64px"></dc-import>
+  <div style="display: flex; flex-wrap: wrap; align-items: flex-start">
+    <div style="flex: 0 1 auto; max-width: 100%; min-width: 0"><dc-import name="NavRail" active="journeys" hint-size="256px,640px"></dc-import></div>
+    <main style="flex: 999 1 560px; min-width: 0; padding: 28px 32px 64px; box-sizing: border-box">
+      <div style="max-width: 1120px; display: flex; flex-direction: column; gap: 24px">
+
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+          <div>
+            <div class="cap" style="margin-bottom: 4px"><a href="Main.dc.html" style="text-decoration: none; font-weight: 500">← Overview</a>{{crumb}}</div>
+            <h1 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">Journeys</h1>
+            <p style="margin: 4px 0 0; color: #5F6368"><span style="font-weight: 500; color: #202124">Where do people leave, and how do they struggle there?</span></p>
+          </div>
+          <div class="seg" role="group" aria-label="Journey">
+            <template data-sc="for" list="{{jtabs}}" as="j" hint-placeholder-count="3">
+              <button type="button" data-fk="{{j.fk}}" aria-pressed="{{j.on}}" onClick="{{j.pick}}" title="{{j.title}}" style="{{j.style}}">{{j.label}}<template data-sc="if" value="{{j.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="height: 18px; padding: 0 6px; border-radius: 9px; background: #FCE8E6; color: #C5221F; font-size: 11px; display: inline-flex; align-items: center">{{j.badge}}</span></template></button>
+            </template>
+          </div>
+        </div>
+
+        <dc-import name="ScopeBar" hint-size="100%,40px"></dc-import>
+
+        <template data-sc="if" value="{{isCompareMode}}" hint-placeholder-val="{{ false }}">
+          <section class="card" aria-label="Journey comparison by group" style="margin: 16px 0; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px"><h2 class="h2" style="margin: 0">Journey differences by group</h2><span class="cap">{{compareNames}} · {{metricName}}</span></div>
+            <div style="overflow-x: auto"><table class="tbl hm" style="min-width: 720px"><thead><tr><th scope="col" style="width: 20%">Step</th><template data-sc="for" list="{{personaCols}}" as="pc" hint-placeholder-count="5"><th scope="col">{{pc.label}}</th></template></tr></thead><tbody><template data-sc="for" list="{{grid}}" as="row" hint-placeholder-count="6"><tr><td style="font-weight: 500">{{row.name}}<template data-sc="if" value="{{row.hasContrast}}" hint-placeholder-val="{{ false }}"><div class="cap" style="font-weight: 400">{{row.contrast}}</div></template></td><template data-sc="for" list="{{row.cells}}" as="c" hint-placeholder-count="5"><td style="background: {{c.bg}}; color: {{c.fg}}; {{c.ring}}">{{c.v}}</td></template></tr></template></tbody></table></div>
+          </section>
+        </template>
+
+        <!-- Issue strip: dim navigation, sticky -->
+        <nav aria-label="Issues in this journey" style="position: sticky; top: 0; z-index: 5; margin: 0 -16px; padding: 0 16px; background: rgba(248,249,250,.97); border-bottom: 1px solid #DADCE0; backdrop-filter: blur(4px)">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px">
+            <div role="tablist" style="display: flex; flex-wrap: wrap">
+              <template data-sc="for" list="{{strip}}" as="s" hint-placeholder-count="4">
+                <button type="button" role="tab" class="issue" data-fk="{{s.fk}}" aria-selected="{{s.on}}" onClick="{{s.pick}}" style="{{s.style}}">
+                  <span class="rk" style="{{s.rkStyle}}">{{s.n}}</span>
+                  <span class="dot" style="background: {{s.dot}}; width: 6px; height: 6px"></span>
+                  {{s.name}}
+                  <span class="num">{{s.share}}</span>
+                  <span style="font-size: 11px; font-weight: 500; color: {{s.tagColor}}">{{s.tag}}</span>
+                </button>
+              </template>
+              <template data-sc="if" value="{{extraSel}}" hint-placeholder-val="{{ false }}">
+                <button type="button" role="tab" class="issue" aria-selected="true" style="color: #174EA6; font-weight: 500; border-bottom-color: #1A73E8">
+                  <span class="rk" style="background: #1A73E8; color: #FFFFFF">{{hero.n}}</span>{{hero.stripName}}
+                </button>
+              </template>
+              <button type="button" class="issue" data-fk="more" onClick="{{toggleList}}" aria-expanded="{{listOpenStr}}" style="color: #1A73E8; font-weight: 500">{{moreLabel}}</button>
+            </div>
+          </div>
+          <template data-sc="if" value="{{listOpen}}" hint-placeholder-val="{{ false }}">
+            <div style="margin: 0 0 12px; border: 1px solid #E8EAED; border-radius: 10px; background: #FFFFFF; overflow-x: auto">
+              <div style="min-width: 760px">
+                <template data-sc="for" list="{{issues}}" as="r" hint-placeholder-count="7">
+                  <button type="button" class="lrow" data-fk="{{r.fk}}" onClick="{{r.pick}}" aria-pressed="{{r.on}}" style="{{r.rowStyle}}">
+                    <span class="num" style="text-align: center">{{r.n}}</span>
+                    <span style="min-width: 0">{{r.action}} <span style="font-weight: 500; color: #3C4043">{{r.item}}</span> for {{r.who}}</span>
+                    <span class="num" style="display: flex; flex-direction: column; align-items: flex-end; line-height: 18px; white-space: normal"><span style="color: #3C4043">{{r.signal}}</span><span style="font-size: 11px; line-height: 14px; font-weight: 400; color: #5F6368">{{r.vs}}</span></span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: {{r.dot}}; width: 6px; height: 6px"></span>{{r.type}}</span>
+                    <span title="{{r.confLabel}} confidence" style="display: inline-flex; gap: 2px; align-items: flex-end"><span style="width: 4px; height: 7px; border-radius: 1px; background: {{r.c1}}"></span><span style="width: 4px; height: 11px; border-radius: 1px; background: {{r.c2}}"></span><span style="width: 4px; height: 15px; border-radius: 1px; background: {{r.c3}}"></span></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </template>
+        </nav>
+
+        <!-- Hero: the selected issue (bright) -->
+        <template data-sc="if" value="{{notCompareMode}}" hint-placeholder-val="{{ true }}">
+        <section class="card" aria-labelledby="hero" style="padding: 28px 32px; display: flex; flex-direction: column; gap: 24px">
+          <div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+            <figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+              <template data-sc="if" value="{{vis.otp}}" hint-placeholder-val="{{ true }}">
+                <div class="phone" role="img" aria-label="{{vis.aria}}">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500"><span aria-hidden="true">‹</span> Verify your phone</div>
+                  <div class="bar" style="height: 8px; width: 88%; background: #F1F3F4"></div>
+                  <div class="bar" style="height: 8px; width: 64%; background: #F1F3F4"></div>
+                  <div style="display: flex; gap: 6px; margin-top: 8px"><span class="field" style="flex: 1; height: 36px"></span><span class="field" style="flex: 1; height: 36px"></span><span class="field" style="flex: 1; height: 36px"></span><span class="field" style="flex: 1; height: 36px"></span><span class="field" style="flex: 1; height: 36px"></span></div>
+                  <div style="flex: 1"></div>
+                  <div style="align-self: center; padding: 8px 14px; border-radius: 8px; background: #F1F3F4; font-size: 11px; line-height: 14px; color: #3C4043; text-align: center">Resend code / receive via SMS</div>
+                  <div style="height: 22px"></div>
+                  <div style="height: 40px; border-radius: 8px; background: #202124; color: #FFFFFF; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center">Verify</div>
+                  <template data-sc="for" list="{{vis.glows}}" as="g" hint-placeholder-count="3"><span class="glow" style="{{g.gStyle}}"></span></template>
+                  <template data-sc="for" list="{{vis.glows}}" as="g" hint-placeholder-count="3"><span class="badge" style="{{g.bStyle}}">{{g.n}}</span></template>
+                </div>
+              </template>
+              <template data-sc="if" value="{{vis.form}}" hint-placeholder-val="{{ false }}">
+                <div class="phone" role="img" aria-label="{{vis.aria}}">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500"><span aria-hidden="true">‹</span> Personal data</div>
+                  <template data-sc="for" list="{{formFields}}" as="f" hint-placeholder-count="4">
+                    <div style="display: flex; flex-direction: column; gap: 5px"><span class="bar" style="height: 6px; width: {{f}}"></span><span class="field" style="height: 30px; {{vis.fieldStyle}}"></span></div>
+                  </template>
+                  <div style="flex: 1"></div>
+                  <div style="height: 40px; border-radius: 8px; background: #202124; color: #FFFFFF; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center">Continue</div>
+                  <template data-sc="if" value="{{vis.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 18px; top: 60px; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border-radius: 13px; background: {{vis.badgeBg}}; color: #FFFFFF; font-size: 12px; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="7.5"></circle><path d="M12 9.5V13l2.5 1.5M10 3h4"></path></svg>{{vis.badgeTxt}}</span></template>
+                </div>
+              </template>
+              <template data-sc="if" value="{{vis.single}}" hint-placeholder-val="{{ false }}">
+                <div class="phone" role="img" aria-label="{{vis.aria}}">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500"><span aria-hidden="true">‹</span> TIN number</div>
+                  <div class="bar" style="height: 8px; width: 90%; background: #F1F3F4"></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 12px"><span style="font-size: 10px; color: #5F6368">Tax identification number</span><span class="field" style="height: 34px; border: 2px solid #1A73E8"></span></div>
+                  <div class="bar" style="height: 6px; width: 70%; background: #F1F3F4"></div>
+                  <div style="flex: 1"></div>
+                  <div style="align-self: center; font-size: 11px; color: #1A73E8">‹ Back</div>
+                  <div style="height: 40px; border-radius: 8px; background: #202124; color: #FFFFFF; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center">Continue</div>
+                  <template data-sc="if" value="{{vis.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 18px; top: 60px; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border-radius: 13px; background: {{vis.badgeBg}}; color: #FFFFFF; font-size: 12px; font-weight: 500">{{vis.badgeTxt}}</span></template>
+                </div>
+              </template>
+              <template data-sc="if" value="{{vis.selfie}}" hint-placeholder-val="{{ false }}">
+                <div class="phone" role="img" aria-label="{{vis.aria}}" style="{{vis.selfieStyle}}">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500"><span aria-hidden="true">‹</span> Selfie check</div>
+                  <div style="width: 150px; height: 190px; border-radius: 95px / 110px; border: 2px dashed #DADCE0; align-self: center; margin-top: 16px"></div>
+                  <div style="flex: 1"></div>
+                  <div style="height: 40px; border-radius: 8px; background: #DADCE0; color: #FFFFFF; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center">Take selfie</div>
+                  
+                </div>
+              </template>
+              <template data-sc="if" value="{{vis.checkout}}" hint-placeholder-val="{{ false }}">
+                <div class="phone" role="img" aria-label="{{vis.aria}}">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500"><span aria-hidden="true">‹</span> Checkout</div>
+                  <div class="bar" style="height: 8px; width: 70%; background: #F1F3F4"></div>
+                  <div class="bar" style="height: 8px; width: 50%; background: #F1F3F4"></div>
+                  <div style="display: flex; justify-content: center; gap: 10px; margin-top: 12px"><span style="width: 12px; height: 12px; border-radius: 6px; background: #202124"></span><span style="width: 12px; height: 12px; border-radius: 6px; background: #202124"></span><span style="width: 12px; height: 12px; border-radius: 6px; background: #202124"></span><span style="width: 12px; height: 12px; border-radius: 6px; background: #202124"></span></div>
+                  <div style="margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: #FCE8E6; color: #C5221F; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace">payment_timeout</div>
+                  <div style="flex: 1"></div>
+                  <div style="height: 44px; border-radius: 8px; background: #1A73E8; color: #FFFFFF; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center">Pay</div>
+                  <template data-sc="for" list="{{vis.glows}}" as="g" hint-placeholder-count="1"><span class="glow" style="{{g.gStyle}}"></span></template>
+                  <template data-sc="for" list="{{vis.glows}}" as="g" hint-placeholder-count="1"><span class="badge" style="{{g.bStyle}}">{{g.n}}</span></template>
+                  <template data-sc="if" value="{{vis.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 18px; top: 60px; height: 24px; padding: 0 10px; border-radius: 12px; background: {{vis.badgeBg}}; color: #FFFFFF; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center">{{vis.badgeTxt}}</span></template>
+                </div>
+              </template>
+              <template data-sc="if" value="{{vis.details}}" hint-placeholder-val="{{ false }}">
+                <div class="phone" role="img" aria-label="{{vis.aria}}">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500"><span aria-hidden="true">‹</span> Details</div>
+                  <template data-sc="for" list="{{formFields3}}" as="f" hint-placeholder-count="3">
+                    <div style="display: flex; flex-direction: column; gap: 5px"><span class="bar" style="height: 6px; width: {{f}}"></span><span class="field" style="height: 30px"></span></div>
+                  </template>
+                  <div class="bar" style="height: 6px; width: 80%; background: #F1F3F4"></div>
+                  <div style="flex: 1"></div>
+                  <div style="height: 40px; border-radius: 8px; background: #202124; color: #FFFFFF; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center">Continue</div>
+                  <template data-sc="if" value="{{vis.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 18px; top: 60px; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border-radius: 13px; background: {{vis.badgeBg}}; color: #FFFFFF; font-size: 12px; font-weight: 500">{{vis.badgeTxt}}</span></template>
+                </div>
+              </template>
+              <template data-sc="if" value="{{vis.generic}}" hint-placeholder-val="{{ false }}">
+                <div class="phone" role="img" aria-label="{{vis.aria}}">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500"><span aria-hidden="true">‹</span> {{vis.stepName}}</div>
+                  <div class="bar" style="height: 8px; width: 80%; background: #F1F3F4"></div>
+                  <div class="bar" style="height: 8px; width: 56%; background: #F1F3F4"></div>
+                  <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 8px"><span class="bar" style="height: 6px; width: 40%"></span><span class="field" style="height: 30px"></span></div>
+                  <div style="display: flex; flex-direction: column; gap: 5px"><span class="bar" style="height: 6px; width: 50%"></span><span class="field" style="height: 30px"></span></div>
+                  <div style="flex: 1"></div>
+                  <div style="height: 40px; border-radius: 8px; background: #202124; color: #FFFFFF; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center">Continue</div>
+                  <template data-sc="if" value="{{vis.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 18px; top: 60px; display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 13px; background: {{vis.badgeBg}}; color: #FFFFFF; font-size: 12px; font-weight: 500">{{vis.badgeTxt}}</span></template>
+                </div>
+              </template>
+              <figcaption class="cap" style="text-align: center">{{vis.caption}}</figcaption>
+            </figure>
+
+            <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+                <h2 id="hero" style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 500; color: #1967D2">{{hero.rankLabel}}</h2>
+                <span class="chip" style="background: {{hero.chipBg}}; color: {{hero.chipFg}}"><span class="dot" style="background: {{hero.dot}}"></span>{{hero.chip}}</span>
+                <template data-sc="if" value="{{hero.hasSegment}}" hint-placeholder-val="{{ false }}"><span class="chip" style="background: #E8F0FE; color: #174EA6">{{hero.segment}}</span></template>
+                <span class="num" style="margin-left: auto; font-size: 20px; line-height: 28px; font-weight: 500; {{hero.valueStyle}}"><span class="sq-count">{{hero.value}}</span><span style="font-size: 13px; font-weight: 400; color: #5F6368">{{hero.valueUnit}}</span></span>
+              </div>
+              <p style="margin: 0; font-size: 28px; line-height: 36px">{{hero.action}} <span style="font-weight: 500">{{hero.item}}</span> for {{hero.who}} <span style="font-size: 16px; color: #5F6368">{{hero.ctx}}</span></p>
+              <template data-sc="if" value="{{hero.notTop}}" hint-placeholder-val="{{ false }}">
+                <button type="button" data-fk="top" onClick="{{goTop}}" style="align-self: flex-start; margin-top: -8px; border: 0; background: transparent; padding: 0; font-family: inherit; font-size: 13px; color: #1A73E8; cursor: pointer">Biggest leak in this journey: {{topName}} →</button>
+              </template>
+              <template data-sc="if" value="{{hero.hasStats}}" hint-placeholder-val="{{ true }}"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px">
+                <template data-sc="for" list="{{hero.stats}}" as="t" hint-placeholder-count="4">
+                  <div class="stat" style="{{t.box}}"><div class="lbl">{{t.label}}</div><div class="num sq-count" style="font-size: 22px; line-height: 30px; {{t.valStyle}}">{{t.v}}</div><div class="cap">{{t.sub}}</div></div>
+                </template>
+              </div></template>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="lbl">{{hero.whyLabel}}</span><span class="tag" style="{{hero.whyTagStyle}}">{{hero.whyTag}}</span><span>{{hero.why}}</span></div>
+              <template data-sc="if" value="{{hero.hasWho}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; background: #F8F9FA; border-radius: 10px">
+                <div style="display: flex; align-items: baseline"><span class="lbl">Who's most affected</span></div>
+                <template data-sc="for" list="{{hero.whoRows}}" as="u" hint-placeholder-count="5">
+                  <div style="display: grid; grid-template-columns: 130px 1fr 52px; gap: 12px; align-items: center">
+                    <span style="{{u.ls}}">{{u.name}}</span>
+                    <span style="position: relative; height: 8px; border-radius: 4px; background: #E8EAED"><span style="display: block; width: {{u.w}}; height: 100%; border-radius: 4px; background: {{u.c}}"></span><span style="position: absolute; left: {{hero.tickPos}}; top: -3px; width: 2px; height: 14px; border-radius: 1px; background: #3C4043"></span></span>
+                    <span class="num sq-count" style="text-align: right; {{u.ls}}">{{u.v}}</span>
+                  </div>
+                </template>
+              </div></template>
+            </div>
+          </div>
+
+          <template data-sc="if" value="{{replay.has}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 20px; border-top: 1px solid #F1F3F4">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px">
+                <span class="lbl">One stuck session, replayed</span>
+                <span class="cap">{{replay.who}} · {{replay.outcome}}</span>
+                <div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 12px" class="cap">
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 3px; height: 12px; background: #D93025; border-radius: 1px"></span>Repeated taps</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 0; border-top: 2px dotted #9AA0A6"></span>Idle</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 2px; height: 10px; background: #9AA0A6"></span>Tap</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: #1A73E8"></span>Went back</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; background: #202124; border-radius: 2px"></span>Exit</span>
+                </div>
+              </div>
+              <div role="img" aria-label="{{replay.aria}}" style="position: relative; height: 44px; border-radius: 8px; background: #F8F9FA; overflow: hidden">
+                <template data-sc="for" list="{{replay.bands}}" as="b" hint-placeholder-count="3"><span style="position: absolute; top: 8px; height: 28px; {{b.st}}"></span></template>
+                <template data-sc="for" list="{{replay.bands}}" as="b" hint-placeholder-count="3"><span style="position: absolute; top: 12px; font-size: 11px; white-space: nowrap; {{b.lb}}">{{b.name}}</span></template>
+                <template data-sc="for" list="{{replay.marks}}" as="m" hint-placeholder-count="8"><span style="position: absolute; {{m.st}}"></span></template>
+              </div>
+              <div class="cap num" style="display: grid; grid-template-columns: {{replay.tickCols}}"><template data-sc="for" list="{{replay.ticks}}" as="k" hint-placeholder-count="5"><span>{{k.t}}</span></template></div>
+            </div>
+          </template>
+
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px">
+            <button type="button" class="btn btn-filled" onClick="{{hero.openPrimary}}">{{hero.primary}}</button>
+            <template data-sc="if" value="{{hero.hasWatch}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-outlined" onClick="{{hero.openWatch}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"></path></svg>Watch sessions</button></template>
+          </div>
+        </section>
+
+        <!-- Evidence: Where sessions go -->
+        <section class="card" aria-labelledby="flow" style="padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
+            <div style="display: flex; align-items: center; gap: 4px; position: relative">
+              <h2 id="flow" class="h2">Where users go <span style="font-size: 12px; font-weight: 400; color: #5F6368">· counted in sessions</span></h2>
+              <button type="button" aria-label="How to read this chart" aria-expanded="{{infoFlowStr}}" onclick="{{toggleInfoFlow}}" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
+              <template data-sc="if" value="{{infoFlowOpen}}" hint-placeholder-val="{{ false }}">
+                <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043">
+                  Wider bands mean more sessions. Bands curving down are people who left or switched journeys. Click a step to highlight its flows.
+                </div>
+              </template>
+            </div>
+            <div class="seg" role="group" aria-label="View">
+              <button type="button" data-fk="chart" aria-pressed="{{chartPressed}}" onClick="{{showChart}}" style="{{chartBtn}}">Chart</button>
+              <button type="button" data-fk="table" aria-pressed="{{tablePressed}}" onClick="{{showTable}}" style="{{tableBtn}}">Table</button>
+            </div>
+          </div>
+
+          <template data-sc="if" value="{{journeyEmpty}}" hint-placeholder-val="{{ false }}">
+            <p class="cap" style="margin: 0; padding: 16px 20px; border-radius: 10px; background: #F8F9FA">{{emptyNote}}</p>
+          </template>
+
+          <template data-sc="if" value="{{isChart}}" hint-placeholder-val="{{ true }}">
+            <div style="overflow-x: auto">
+              <div style="min-width: 860px; display: flex; flex-direction: column; gap: 4px">
+                <div style="display: grid; grid-template-columns: {{cols}}">
+                  <template data-sc="for" list="{{nodes}}" as="n" hint-placeholder-count="8">
+                    <button type="button" class="nodebtn" data-fk="{{n.fk}}" aria-pressed="{{n.pressed}}" onClick="{{n.pickPath}}" style="{{n.btnStyle}}">
+                      <span style="font-size: 12px; line-height: 16px; text-align: center">{{n.name}}</span>
+                      <span class="num" style="font-size: 15px; line-height: 20px; font-weight: 500">{{n.reachedTxt}}</span>
+                    </button>
+                  </template>
+                </div>
+                <template data-sc="if" value="{{merged}}" hint-placeholder-val="{{ false }}">
+                  <div role="img" aria-label="{{arcsAria}}" style="position: relative; height: 80px; margin-top: 22px">
+                    <template data-sc="for" list="{{marcs}}" as="a" hint-placeholder-count="3">
+                      <span style="position: absolute; left: {{a.left}}; width: {{a.width}}; bottom: 0; height: {{a.h}}; box-sizing: border-box; border: {{a.w}} solid {{a.color}}; border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0">
+                        <span class="num" style="position: absolute; left: 50%; top: {{a.labelTop}}; transform: translateX(-50%); padding: 0 4px; background: #FFFFFF; font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; color: {{a.txt}}">{{a.n}} back</span>
+                      </span>
+                    </template>
+                  </div>
+                </template>
+                <div role="img" aria-label="{{sk.aria}}" style="position: relative; height: {{sk.h}}">
+                  <template data-sc="for" list="{{sk.paths}}" as="f" hint-placeholder-count="12"><svg viewBox="{{sk.vb}}" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible"><path d="{{f.d}}" fill="{{f.fill}}" opacity="{{f.op}}"></path></svg></template>
+                  <template data-sc="for" list="{{sk.rects}}" as="r" hint-placeholder-count="14"><span style="position: absolute; left: {{r.left}}; width: {{r.w}}; top: {{r.top}}; height: {{r.h}}; border-radius: 2px; background: {{r.fill}}; {{r.ring}}"></span></template>
+                  <template data-sc="for" list="{{sk.labels}}" as="l" hint-placeholder-count="10"><span class="num" style="position: absolute; left: {{l.left}}; top: {{l.top}}; transform: {{l.tf}}; font-size: 12px; line-height: 16px; white-space: nowrap; {{l.style}}">{{l.txt}}</span></template>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 8px" class="cap">
+                  <span class="lbl">Steps</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: #34A853"></span>Healthy</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: #1A73E8"></span>Confusing wording</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: #D93025"></span>Technical bug</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: #F9AB00"></span>UX friction</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: #1E8E3E"></span>Completed</span>
+                  <span class="lbl" style="margin-left: 8px">Flows</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 8px; border-radius: 2px; background: #EEF0F2; border: 1px solid #DADCE0"></span>Started mid-journey</span>
+                  <template data-sc="if" value="{{hasBypass}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 8px; border-radius: 2px; background: #DADCE0"></span>Skipped ahead</span></template>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 8px; border-radius: 2px; background: #D93025"></span>Left the app, coloured by cause</span>
+                  <template data-sc="if" value="{{merged}}" hint-placeholder-val="{{ false }}"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; flex-basis: 100%">
+                    <span class="lbl">Back arcs</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 4px; border-radius: 2px; background: #D93025"></span>Back out of a critical step</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 4px; border-radius: 2px; background: #F9AB00"></span>Frustrated loop</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 4px; border-radius: 2px; background: #1E8E3E"></span>Comparing (good)</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 4px; border-radius: 2px; background: #DADCE0"></span>Not this step</span>
+                  </span></template>
+                  <span class="tag">Calculated</span>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px; padding: 16px 20px; border-radius: 12px; background: #F8F9FA">
+              <div style="display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center">
+                <div style="display: flex; flex-direction: column; gap: 4px; min-width: 160px">
+                  <span class="lbl">{{sel.label}}</span>
+                  <span style="font-size: 18px; line-height: 24px; font-weight: 500">{{sel.name}}</span>
+                  <span class="cap">{{sel.cause}}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, minmax(72px, 1fr)); gap: 10px">
+                  <div class="stat"><div class="lbl">Reached</div><div class="num" style="font-size: 20px; line-height: 28px">{{sel.reachedTxt}}</div></div>
+                  <div class="stat"><div class="lbl">Went on</div><div class="num" style="font-size: 20px; line-height: 28px">{{sel.onTxt}}</div></div>
+                  <div class="stat"><div class="lbl">Left</div><div class="num" style="font-size: 20px; line-height: 28px; {{sel.leftStyle}}">{{sel.leftTxt}}</div></div>
+                </div>
+                <p style="flex: 1 1 260px; margin: 0; color: #3C4043">{{sel.sentence}}</p>
+                <template data-sc="if" value="{{sel.notIssue}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-outlined" onClick="{{sel.reset}}" style="height: 32px; padding: 0 12px; font-size: 13px">Back to this issue's step</button></template>
+              </div>
+              <template data-sc="if" value="{{showMTiles}}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px">
+                  <template data-sc="for" list="{{mTiles}}" as="t" hint-placeholder-count="2">
+                    <div class="stat" style="{{t.style}}">
+                      <div class="lbl">{{t.label}}</div>
+                      <div style="font-weight: 500; margin-top: 4px">{{t.title}} <span class="num sq-count" style="{{t.numStyle}}">{{t.num}}</span></div>
+                      <div class="cap" style="margin-top: 2px">{{t.sub}}</div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <template data-sc="if" value="{{isTable}}" hint-placeholder-val="{{ false }}">
+            <div style="overflow-x: auto">
+              <table class="tbl" style="min-width: 760px">
+                <caption class="cap" style="text-align: left; padding-bottom: 8px">{{tableCaption}}</caption>
+                <thead><tr><th scope="col">Step</th><th scope="col">Reached (sessions)</th><th scope="col">Went on</th><th scope="col">Left</th><th scope="col">Leave rate</th><th scope="col">Share of all exits</th><th scope="col">Main reason</th></tr></thead>
+                <tbody>
+                  <template data-sc="for" list="{{nodes}}" as="n" hint-placeholder-count="8">
+                    <tr style="{{n.rowStyle}}"><td style="font-weight: 500">{{n.name}}</td><td class="num">{{n.reachedTxt}}</td><td class="num">{{n.onTxt}}</td><td class="num">{{n.leftTxt}}</td><td class="num">{{n.rateTxt}}</td><td class="num" style="{{n.shareStyle}}">{{n.shareTxt}}</td><td>{{n.cause}}</td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </section>
+
+        <!-- Evidence: Back-and-forth -->
+        <template data-sc="if" value="{{notMerged}}" hint-placeholder-val="{{ true }}">
+        <section class="card" aria-labelledby="bf" style="padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
+            <div style="display: flex; align-items: center; gap: 4px; position: relative">
+              <h2 id="bf" class="h2">Back-and-forth</h2>
+              <button type="button" aria-label="How to read this chart" aria-expanded="{{infoLoopsStr}}" onclick="{{toggleInfoLoops}}" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
+              <template data-sc="if" value="{{infoLoopsOpen}}" hint-placeholder-val="{{ false }}">
+                <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043">
+                  Each arc is people going back one step. Thicker arcs mean more people. Arcs not touching this issue's step are greyed.
+                </div>
+              </template>
+            </div>
+            <span class="cap num">{{loopsNote}}</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px" class="cap">
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 18px; height: 4px; border-radius: 2px; background: #D93025"></span>Bad: loop out of a critical step</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 18px; height: 4px; border-radius: 2px; background: #F9AB00"></span>Bad: frustrated loop</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 18px; height: 4px; border-radius: 2px; background: #1E8E3E"></span>Good: comparing options</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 18px; height: 4px; border-radius: 2px; background: #DADCE0"></span>Grey: loops away from the selected step</span>
+          </div>
+          <div style="overflow-x: auto">
+            <div style="min-width: 860px">
+              <div role="img" aria-label="{{arcsAria}}" style="position: relative; height: 150px">
+                <span style="position: absolute; left: 6.25%; right: 6.25%; bottom: 14px; height: 2px; background: #DADCE0"></span>
+                <template data-sc="for" list="{{arcs}}" as="a" hint-placeholder-count="5">
+                  <span class="sq-back-arc {{a.anim}}" style="position: absolute; left: {{a.left}}; width: {{a.width}}; bottom: 15px; height: {{a.h}}; box-sizing: border-box; border: {{a.w}} solid {{a.color}}; border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; opacity: 0.9">
+                    <span class="num" style="position: absolute; left: 50%; top: {{a.labelTop}}; transform: translateX(-50%); font-size: 15px; font-weight: 500; color: {{a.color}}">{{a.n}}</span>
+                  </span>
+                </template>
+                <template data-sc="for" list="{{dots}}" as="d" hint-placeholder-count="8"><span style="position: absolute; left: {{d.x}}; bottom: 8px; width: 14px; height: 14px; margin-left: -7px; border-radius: 7px; background: {{d.fill}}; border: 2px solid {{d.stroke}}; box-sizing: border-box"></span></template>
+              </div>
+              <div style="display: grid; grid-template-columns: {{cols}}; margin-top: 4px">
+                <template data-sc="for" list="{{nodes}}" as="n" hint-placeholder-count="8"><span style="text-align: center; font-size: 12px; line-height: 16px; {{n.labelStyle}}">{{n.name}}</span></template>
+              </div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px">
+            <template data-sc="for" list="{{bfTiles}}" as="t" hint-placeholder-count="2">
+              <div class="stat" style="{{t.style}}">
+                <div class="lbl">{{t.label}}</div>
+                <div style="font-weight: 500; margin-top: 4px">{{t.title}} <span class="num sq-count" style="{{t.numStyle}}">{{t.num}}</span></div>
+                <div class="cap" style="margin-top: 2px">{{t.sub}}</div>
+              </div>
+            </template>
+            <div class="stat" style="border-color: #CEEAD6; background: #F6FBF7">
+              <div class="lbl">Good friction</div>
+              <div style="font-weight: 500; margin-top: 4px">{{good.title}}</div>
+              <div class="cap" style="margin-top: 2px">{{good.sub}}</div>
+            </div>
+          </div>
+        </section>
+        </template>
+
+        <!-- Evidence: By user group -->
+        </template>
+        <section class="card" aria-labelledby="grp" style="padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px">
+            <div>
+              <template data-sc="if" value="{{isCompareMode}}" hint-placeholder-val="{{ false }}">
+                <h2 id="grp" class="h2" style="display: flex; align-items: center; gap: 8px">Comparing {{compareNames}}<span class="chip" style="background: #E8F0FE; color: #174EA6">Compare mode</span></h2>
+              </template>
+              <template data-sc="if" value="{{notCompareMode}}" hint-placeholder-val="{{ true }}">
+                <h2 id="grp" class="h2">By user group</h2>
+              </template>
+              <p class="cap" style="margin: 4px 0 0">Share of sessions at each step with: {{metricName}}</p>
+            </div>
+            <div class="seg" role="group" aria-label="Measure">
+              <template data-sc="for" list="{{metrics}}" as="m" hint-placeholder-count="5"><button type="button" data-fk="{{m.fk}}" aria-pressed="{{m.sel}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button></template>
+            </div>
+          </div>
+          <div style="overflow-x: auto">
+            <table class="tbl hm" style="min-width: 720px">
+              <thead><tr><th scope="col" style="width: 20%">Step</th><template data-sc="for" list="{{personaCols}}" as="pc" hint-placeholder-count="5"><th scope="col">{{pc.label}}</th></template></tr></thead>
+              <tbody>
+                <template data-sc="for" list="{{grid}}" as="row" hint-placeholder-count="6">
+                  <tr><td style="font-weight: 500; {{row.nameStyle}}">{{row.name}}<template data-sc="if" value="{{row.hasContrast}}" hint-placeholder-val="{{ false }}"><div class="cap" style="font-weight: 400; color: #5F6368">{{row.contrast}}</div></template></td><template data-sc="for" list="{{row.cells}}" as="c" hint-placeholder-count="5"><td class="sq-count" style="background: {{c.bg}}; color: {{c.fg}}; {{c.ring}}">{{c.v}}</td></template></tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <details class="card" style="padding: 16px 20px">
+          <summary style="cursor: pointer; font-weight: 500">Transaction completion by product</summary>
+          <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 16px">
+            <div class="cap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span class="tag">Calculated</span>{{productNote}}</div>
+            <template data-sc="for" list="{{products}}" as="p" hint-placeholder-count="7">
+              <div style="display: grid; grid-template-columns: 200px 1fr 48px; gap: 6px 16px; align-items: center">
+                <span style="font-weight: 500">{{p.name}} <span class="cap num">· {{p.sessions}}</span></span>
+                <span class="track"><span style="display: block; width: {{p.w}}; height: 100%; background: {{p.color}}"></span></span>
+                <span class="num" style="text-align: right; {{p.pctStyle}}">{{p.pct}}</span>
+                <span></span><span class="cap">{{p.where}}</span><span></span>
+              </div>
+            </template>
+          </div>
+        </details>
+      </div>
+    </main>
+  </div>
+</div>

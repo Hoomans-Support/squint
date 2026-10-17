@@ -1,0 +1,98 @@
+<style>
+  .sqa-bar { border-radius: 2px; background: #DADCE0; }
+  .sqa-sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
+  .sq-printdeck { display: none; }
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    html, body { background: #FFFFFF !important; }
+    .sq-noprint { display: none !important; }
+    .sq-root5 { min-height: 0 !important; overflow: visible !important; }
+    .sq-printdeck { display: block !important; }
+    .sq-pg { width: 1280px; height: 720px; overflow: hidden; break-after: page; page-break-after: always; }
+    .sq-slide { zoom: 1 !important; }
+  }
+</style>
+<div class="sq-root5" style="position: relative; min-height: 1000px; overflow: hidden; font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px; color: #202124">
+  <div class="sq-noprint" aria-hidden="true" style="position: absolute; inset: 0; z-index: 1"><dc-import name="Ask" hint-size="100%,1400px"></dc-import></div>
+  <div class="sq-noprint" aria-hidden="true" style="position: absolute; inset: 0; z-index: 2; background: rgba(32,33,36,.45)"></div>
+
+  <div class="sq-noprint" role="dialog" aria-modal="true" aria-labelledby="exp-title" style="position: relative; z-index: 3; margin: 72px auto 0; width: min(1040px, calc(100% - 32px)); box-sizing: border-box; background: #FFFFFF; border-radius: 28px; box-shadow: 0 4px 8px 3px rgba(60,64,67,.15), 0 1px 3px rgba(60,64,67,.3); display: flex; flex-direction: column">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 24px 24px 8px 28px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+      <h2 id="exp-title" style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 400; flex: 1">Export as slides</h2>
+      <span class="cap">{{deckLabel}}</span>
+      <a href="Ask.dc.html" aria-label="Close" style="width: 40px; height: 40px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; color: #5F6368"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; padding: 12px 28px 20px">
+
+      <div style="flex: 0 1 260px; display: flex; flex-direction: column; gap: 4px">
+        <span class="lbl" style="padding: 0 8px 6px">Slides · tick the ones to export</span>
+        <template data-sc="for" list="{{slides}}" as="s" hint-placeholder-count="4">
+          <button type="button" class="slide" onClick="{{s.pick}}" style="{{s.style}}" aria-pressed="{{s.on}}">
+            <span class="num cap" style="width: 14px">{{s.n}}</span>
+            <span class="thumb" aria-hidden="true">
+              <span class="sqa-bar" style="height: 5px; width: 70%; background: {{s.accent}}"></span>
+              <span class="sqa-bar" style="height: 3px; width: 50%"></span>
+              <span style="flex: 1; display: flex; gap: 3px; align-items: flex-end"><span class="sqa-bar" style="width: 30%; height: 70%; background: {{s.chart}}"></span><span class="sqa-bar" style="width: 30%; height: 30%"></span><span class="sqa-bar" style="width: 30%; height: 25%"></span></span>
+            </span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-weight: 500">{{s.title}}</span>
+              <span class="cap">{{s.kind}}</span>
+            </span>
+            <input type="checkbox" checked="{{s.include}}" onChange="{{s.toggle}}" aria-label="Include slide {{s.n}}" style="width: 18px; height: 18px; accent-color: #1A73E8; margin: 0">
+          </button>
+        </template>
+      </div>
+
+      <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        <span class="lbl">Preview · slide {{sel.n}}</span>
+        <div style="position: relative; width: 100%; aspect-ratio: 16 / 9; border: 1px solid #DADCE0; border-radius: 12px; overflow: hidden; background: #FFFFFF; box-sizing: border-box; padding: 5% 6%; display: flex; flex-direction: column; gap: 4%">
+          <div style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #1A73E8"></span><span class="cap" style="font-size: 11px">{{sel.eyebrow}}</span></div>
+          <div style="font-size: 22px; line-height: 28px">{{sel.headA}} <span style="font-weight: 500">{{sel.headB}}</span>{{sel.headC}}</div>
+          <div class="cap" style="font-size: 13px; line-height: 18px; color: #3C4043">{{sel.body}}</div>
+          <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px">
+            <template data-sc="for" list="{{sel.bars}}" as="b" hint-placeholder-count="3">
+              <div style="display: grid; grid-template-columns: 34% 1fr 40px; gap: 10px; align-items: center; font-size: 12px">
+                <span style="{{b.ls}}">{{b.name}}</span>
+                <span style="height: 8px; border-radius: 4px; background: #F1F3F4"><span style="display: block; height: 100%; width: {{b.w}}; border-radius: 4px; background: {{b.c}}"></span></span>
+                <span class="num" style="text-align: right; {{b.ls}}">{{b.v}}</span>
+              </div>
+            </template>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px solid #F1F3F4" class="cap"><span style="font-size: 10px">{{sel.scopeShort}}</span><span style="display: inline-flex; gap: 4px"><template data-sc="if" value="{{sel.hasAI}}" hint-placeholder-val="{{ true }}"><span class="tag tag-ai">AI</span></template><span class="tag">Calculated</span></span></div>
+        </div>
+        <a href="DeckSlide1.dc.html" style="align-self: flex-start; font-size: 13px; font-weight: 500; text-decoration: none">See full-size slides on the canvas →</a>
+      </div>
+
+      <div style="flex: 0 1 240px; display: flex; flex-direction: column; gap: 14px">
+        <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+          <legend class="lbl" style="padding: 0 0 6px">Format</legend>
+          <template data-sc="for" list="{{formats}}" as="f" hint-placeholder-count="2">
+            <label class="fmt" style="{{f.style}}"><input type="radio" name="fmt" checked="{{f.checked}}" onChange="{{f.pick}}" style="width: 18px; height: 18px; accent-color: #1A73E8; margin: 0">{{f.label}}</label>
+          </template>
+          <span class="cap">{{formatHint}}</span>
+        </fieldset>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <span class="lbl" style="padding-bottom: 4px">Include</span>
+          <label class="sqa-sw"><span>Evidence appendix</span><input type="checkbox" checked="{{appendixOn}}" onChange="{{toggleAppendix}}" style="width: 18px; height: 18px; accent-color: #1A73E8; margin: 0"></label>
+          <label class="sqa-sw"><span>Speaker notes with numbers (text)</span><input type="checkbox" checked="{{notesOn}}" onChange="{{toggleNotes}}" style="width: 18px; height: 18px; accent-color: #1A73E8; margin: 0"></label>
+          <label class="sqa-sw" style="color: #5F6368"><span>AI and Calculated labels</span><input type="checkbox" checked="true" disabled="true" style="width: 18px; height: 18px; margin: 0"></label>
+          <span class="cap">Labels can't be removed, so readers know which lines are AI.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 24px 20px 28px; border-top: 1px solid #E8EAED">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B06000" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+      <span style="flex: 1 1 320px; font-size: 13px; color: #3C4043">{{footNote}}</span>
+      <a class="btn btn-text" href="Ask.dc.html">Cancel</a>
+      <button type="button" class="btn btn-filled" onClick="{{doExport}}" disabled="{{noneOn}}">{{exportLabel}}</button>
+    </div>
+  </div>
+  <div class="sq-printdeck" aria-hidden="true">
+    <template data-sc="for" list="{{printSlides}}" as="p" hint-placeholder-count="4">
+      <div class="sq-pg"><dc-import name="DeckSlide1" n="{{p.n}}"></dc-import></div>
+    </template>
+  </div>
+</div>

@@ -61,20 +61,23 @@ PRODUCTS = ["eload", "water_bill", "electricity_bill", "game_voucher", "cable_in
 PRODUCT_LABELS = {"eload": "E-load", "water_bill": "Water bills", "electricity_bill": "Electricity bills",
                   "game_voucher": "Game voucher", "cable_internet": "Cable TV and internet",
                   "send_money": "Send money", "postpaid_telecom": "Post-paid telecom"}
-DEVICE_CLASSES = {"android_low", "android_mid", "ios"}
-DEVICE_CLASS_LABELS = {"android_low": "Android (low-end)", "android_mid": "Android (mid/high)", "ios": "iOS"}
+DEVICE_CLASSES = {"android_low", "android_mid", "ios", "web_desktop", "web_mobile"}
+DEVICE_CLASS_LABELS = {"android_low": "Android (low-end)", "android_mid": "Android (mid/high)", "ios": "iOS",
+                       "web_desktop": "Web (desktop)", "web_mobile": "Web (mobile)"}
 
 # Journeys: ordered screens. `otp` is shared by register and login. Terminal screens end a journey with success.
+# web_checkout is platform=web only: a merchant-site bill-pay redirect, not a mirror of the app's own top-up/transaction flows.
 JOURNEYS = {
     "browse": ["prices"],
     "register": ["welcome", "register_phone", "otp", "personal_data", "tin", "kyc_selfie", "register_done"],
     "login": ["login_phone", "otp", "home"],
     "topup": ["wallet", "topup_amount", "topup_confirm", "topup_done"],
     "transaction": ["product_list", "txn_details", "txn_checkout", "txn_done"],
+    "web_checkout": ["web_landing", "web_login", "web_otp", "web_review", "web_pay", "web_done"],
 }
 JOURNEY_LABELS = {"browse": "Browse prices", "register": "Register", "login": "Login", "topup": "Wallet top-up",
-                  "transaction": "Transaction"}
-TERMINAL_SCREENS = {"register_done", "home", "topup_done", "txn_done"}
+                  "transaction": "Transaction", "web_checkout": "Web bill payment"}
+TERMINAL_SCREENS = {"register_done", "home", "topup_done", "txn_done", "web_done"}
 SCREEN_LABELS = {
     "prices": "Prices", "welcome": "Welcome", "register_phone": "Register: phone number", "otp": "OTP code",
     "personal_data": "Personal data", "tin": "TIN", "kyc_selfie": "KYC selfie", "register_done": "Registered",
@@ -82,6 +85,8 @@ SCREEN_LABELS = {
     "topup_confirm": "Top-up confirm", "topup_done": "Top-up done",
     "product_list": "Choose product", "txn_details": "Transaction details", "txn_checkout": "Checkout and PIN",
     "txn_done": "Transaction done",
+    "web_landing": "Merchant redirect", "web_login": "Web login", "web_otp": "Web OTP code",
+    "web_review": "Review bill", "web_pay": "Pay (bank redirect)", "web_done": "Payment done",
 }
 SCREEN_STEP = {  # screen -> journey step id
     "prices": "browse", "welcome": "start", "register_phone": "phone", "login_phone": "phone", "otp": "otp",
@@ -89,6 +94,8 @@ SCREEN_STEP = {  # screen -> journey step id
     "wallet": "start", "topup_amount": "amount", "topup_confirm": "confirm",
     "topup_done": "done", "product_list": "product", "txn_details": "details", "txn_checkout": "checkout",
     "txn_done": "done",
+    "web_landing": "start", "web_login": "phone", "web_otp": "otp", "web_review": "details",
+    "web_pay": "checkout", "web_done": "done",
 }
 
 
@@ -104,7 +111,7 @@ for _name in ("JOURNEYS", "SCREEN_LABELS", "JOURNEY_LABELS", "PERSONA_LABELS", "
 def journey_of(screens) -> str | None:
     """Which journey a session belongs to, from the set of screens it viewed (otp is shared, so it is ignored)."""
     s = set(screens)
-    for j in ("transaction", "topup", "register", "login", "browse"):
+    for j in ("transaction", "topup", "register", "login", "browse", "web_checkout"):
         if s & (set(JOURNEYS[j]) - {"otp"}):
             return j
     return None

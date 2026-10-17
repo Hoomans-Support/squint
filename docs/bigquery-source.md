@@ -35,5 +35,8 @@ last pipeline read, with "Read-only, no login". The page only reads `app/static/
 not log in, and the Cloud Run service has no BigQuery access and needs none. Upload JSON and **Your own BigQuery** stay disabled ("Ping us to unlock"):
 connecting a visitor's own warehouse would need sign-in and permissions that this demo does not offer.
 
+## Derived tables (2026-10-16)
+Three more synthetic tables sit next to `wallet_events` in `squint_samples`: `wallet_orders` (8,818 rows, derived 1:1 from completed purchases and top-ups), `audience_members` (1,973) and `watch_sessions` (60, timeline as JSON). Load with `python pipeline/bq_source.py load-derived` after a build. What is derived and what is not: `docs/squint-data-v3.md`. Same rules: the page never queries them, no visitor login, no Cloud Run access.
+
 ## Cost
 The table is about 90 MB. Reading it scans the whole table once (about 89 MB billed per read, well inside the free tier).

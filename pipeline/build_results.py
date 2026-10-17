@@ -19,6 +19,7 @@ import json
 import math
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
+from itertools import combinations
 from pathlib import Path
 from statistics import median
 
@@ -31,9 +32,9 @@ PROFILE = load_profile()      # the active dataset profile: wording and a few bu
 
 UTC = timezone.utc
 CURRENCY = "PHP"
-VALUE_PER_SESSION = {"register_login": 150, "topup": 100, "transaction": 200}   # ASSUMPTIONS, not data
-VALUE_ASSUMPTION = ("Assumed value: placeholder values per completed task (PHP 150 registration or login, PHP 100 top-up, PHP 200 transaction). "
-                    "Not measured; replace with real figures before quoting pesos.")
+VALUE_PER_SESSION = {"register_login": 150, "topup": 100, "transaction": 200, "web_checkout": 200}   # ASSUMPTIONS, not data
+VALUE_ASSUMPTION = ("Assumed value: placeholder values per completed task (PHP 150 registration or login, PHP 100 top-up, "
+                    "PHP 200 transaction or web bill payment). Not measured; replace with real figures before quoting pesos.")
 DATASET_LABEL = "Sample dataset (synthetic)"
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "healthy": 2}
 RANGES = {"24h": timedelta(hours=24), "7d": timedelta(days=7), "30d": timedelta(days=30)}
@@ -46,6 +47,18 @@ ONSET_MIN_DIFF = 0.10
 ONSET_MIN_FIT = 0.6
 STUCK_MS = 30_000
 BUCKETS = 14
+MULTI_PERSONA_IDS = ("individual", "individual_trader", "large_business", "sari_sari")
+
+
+def combined_persona_keys():
+    """Stable keys for every multi-select combination exposed by the UI."""
+    return ["+".join(combo) for size in range(2, len(MULTI_PERSONA_IDS) + 1)
+            for combo in combinations(MULTI_PERSONA_IDS, size)]
+
+
+def persona_selection(persona_key):
+    """Return None for All users, otherwise the persona ids represented by a view key."""
+    return None if persona_key == "all" else set(persona_key.split("+"))
 # the three journeys the UI shows; screens of several backend journeys fold into one step where they play the same role
 UI_STEPS = {
     "register_login": [("prices", ["prices"], "Price check"), ("welcome", ["welcome"], "App open"),
@@ -56,17 +69,23 @@ UI_STEPS = {
               ("done", ["topup_done"], "Top-up done")],
     "transaction": [("product", ["product_list"], "Choose product"), ("details", ["txn_details"], "Details"),
                     ("confirm", ["txn_checkout"], "Checkout and PIN"), ("done", ["txn_done"], "Transaction done")],
+    "web_checkout": [("start", ["web_landing"], "Merchant redirect"), ("phone", ["web_login"], "Web login"),
+                     ("otp", ["web_otp"], "OTP code"), ("details", ["web_review"], "Review bill"),
+                     ("confirm", ["web_pay"], "Pay (bank redirect)"), ("done", ["web_done"], "Payment done")],
 }
-UI_JOURNEY_NAMES = {"register_login": "Register and login", "topup": "Wallet top-up", "transaction": "Transaction"}
+UI_JOURNEY_NAMES = {"register_login": "Register and login", "topup": "Wallet top-up", "transaction": "Transaction",
+                    "web_checkout": "Web bill payment"}
 BACKEND_TO_UI = {"browse": "register_login", "register": "register_login", "login": "register_login", "topup": "topup",
-                 "transaction": "transaction"}
+                 "transaction": "transaction", "web_checkout": "web_checkout"}
 UI_STEPS = PROFILE.get("UI_STEPS", UI_STEPS)
 UI_JOURNEY_NAMES = PROFILE.get("UI_JOURNEY_NAMES", UI_JOURNEY_NAMES)
 STEP_OF = {sc: (j, sid) for j, steps in UI_STEPS.items() for sid, scs, _ in steps for sc in scs}
 STEP_NAME = {(j, sid): name for j, steps in UI_STEPS.items() for sid, _, name in steps}
 LANDMARK_TERMINAL = {(j, steps[-1][0]) for j, steps in UI_STEPS.items()}
 ELEMENT_LABELS = {"resend": "Resend code / receive via SMS", "verify": "Verify button", "pay": "Confirm payment (PIN)",
-                  "continue": "Continue button", "submit": "Submit button", "confirm": "Confirm button"}
+                  "continue": "Continue button", "submit": "Submit button", "confirm": "Confirm button",
+                  "continue_btn": "Continue button", "verify_btn": "Verify button", "pay_btn": "Pay button",
+                  "confirm_btn": "Confirm button"}
 # schematic wireframes for the tap-hotspot card: [top%, left%, w%, h%, kind, label?]. Layout only; the spots are measured.
 WIREFRAMES = {
     "otp": [[0, 0, 100, 11, "bar", "< Verify your phone"], [14, 6, 62, 3, "line"], [19, 6, 48, 3, "line"],
@@ -218,7 +237,8 @@ def load_sessions(path: Path, need: set, windows: list):
             sid = e["session_id"]
             by_sid[sid].append((ts, e["event_type"], sc, e.get("element"), e.get("dwell_ms"), e.get("error_code"),
                                 e.get("app_version"), e.get("persona"), e.get("device_class"), e.get("product"),
-                                e.get("amount_php"), e.get("user_id"), e.get("device_id"), e.get("os"), eid))
+                                e.get("amount_php"), e.get("user_id"), e.get("device_id"), e.get("os"), eid,
+                                e.get("platform")))
             if sid in need:
                 keep[sid].append(e)
     out = []
@@ -228,13 +248,13 @@ def load_sessions(path: Path, need: set, windows: list):
              "amount": None, "user": None, "device": None, "os": None, "views": [], "back_moves": [],
              "back_moves_after_payment": [], "back_moves_after_otp": [], "back_after_payment": False,
              "back_after_otp": False, "stats": {},
-             "last": None, "platform": "app"}
+             "last": None, "platform": None}
         pending_back = None
         payment_reached = False
         otp_reached = False
         prev_t = prev_sc = None
         taps_at: dict = {}
-        for ts, et, sc, el, dw, err, ver, per, dc, prod, amt, uid, did, os_, _ in evs:
+        for ts, et, sc, el, dw, err, ver, per, dc, prod, amt, uid, did, os_, _, plat in evs:
             t_now = parse_ts(ts).timestamp()
             # stuck = no forward progress for 30 s or more (a gap between two events on the same screen), or 3+ taps on one target within 2 s
             if prev_t is not None and prev_sc and et != "screen_view" and t_now - prev_t >= STUCK_MS / 1000 and prev_sc in s["stats"]:
@@ -246,7 +266,7 @@ def load_sessions(path: Path, need: set, windows: list):
                 if len(w) >= 3 and sc in s["stats"]:
                     s["stats"][sc]["stuck"] = True
             for k, v in (("persona", per), ("device_class", dc), ("app_version", ver), ("product", prod), ("user", uid),
-                         ("device", did), ("os", os_)):
+                         ("device", did), ("os", os_), ("platform", plat)):
                 if s[k] is None and v:
                     s[k] = v
             if sc:
@@ -458,7 +478,7 @@ def evidence_session(sid: str, role: str, evs: list, raw: list, sess: dict) -> d
             path.append(e["screen"])
         rows.append({"t": int((parse_ts(e["ts"]) - t0).total_seconds() * 1000), "type": e["event_type"], "screen": e.get("screen"),
                      "element": e.get("element"), "dwell_ms": e.get("dwell_ms"), "error_code": e.get("error_code"), "flag": flag})
-    return {"session_id": sid, "role": role, "platform": "app", "persona": sess["persona"], "path": path, "rows": rows,
+    return {"session_id": sid, "role": role, "platform": sess["platform"], "persona": sess["persona"], "path": path, "rows": rows,
             "events": sorted(raw, key=lambda r: r.get("timestamp", ""))}
 
 
@@ -501,8 +521,10 @@ def main():
     for s in all_s:
         users_by_device[s["device"]].add(s["user"])
     persona_users = Counter()
+    platform_persona_users = defaultdict(set)
     seen_u = set()
     for s in all_s:
+        platform_persona_users[s["platform"]].add((s["persona"], s["user"]))
         if s["user"] not in seen_u:
             seen_u.add(s["user"])
             persona_users[s["persona"]] += 1
@@ -611,6 +633,7 @@ def main():
             "journey": STEP_OF[c["screen"]][0], "step": STEP_OF[c["screen"]][1], "tone": severity,
             "label": f"{'Critical' if severity == 'critical' else 'Warning'} · {kind}",
             "persona_ids": [c["segment"]["persona"]] if "persona" in c["segment"] else [],
+            "platform_ids": sorted({s["platform"] for s in affected}),
             "ranges": rng_ranges, "detected_hours_ago": round((t_end - (first_aff or t_end)).total_seconds() / 3600),
             "is_new": False, "replays": len(c["sample_sessions"]["affected"]),
             "causes": causes_for(c, affected),
@@ -685,6 +708,7 @@ def main():
     # ---------- views
     views = {}
     all_hours_back = {}
+    platform_keys = ["all"] + sorted({s["platform"] for s in all_s if s["platform"]})
     for rng_id, delta in RANGES.items():
         r_end, r_start = t_end, max(t_end - delta, t_first)
         p_start = r_start - delta
@@ -693,16 +717,24 @@ def main():
             pw = (p_start, r_start, f"previous {rng_id.replace('h', ' hours').replace('d', ' days')}")
         else:    # no earlier data (the window starts here): compare with the first half of the window instead
             pw = (t_first, t_first + (r_end - r_start) / 2, "first half of the window (no earlier data)")
-        for pe in ["all"] + sorted(PERSONAS):
-            sub = [s for s in clean if (pe == "all" or s["persona"] == pe)]
-            cur = [s for s in sub if r_start <= s["dt"] < r_end]
-            prev = [s for s in sub if pw[0] <= s["dt"] < pw[1]]
-            views[f"{rng_id}|all|{pe}"] = build_view(rng_id, pe, cur, prev, r_start, r_end, pw, insights, members, guardian, em, wd, all_s)
+        for platform_id in platform_keys:
+            for pe in ["all"] + sorted(PERSONAS) + combined_persona_keys():
+                selected = persona_selection(pe)
+                sub = [s for s in clean if (platform_id == "all" or s["platform"] == platform_id)
+                       and (selected is None or s["persona"] in selected)]
+                cur = [s for s in sub if r_start <= s["dt"] < r_end]
+                prev = [s for s in sub if pw[0] <= s["dt"] < pw[1]]
+                scoped_all = [s for s in all_s if (platform_id == "all" or s["platform"] == platform_id)
+                              and (selected is None or s["persona"] in selected)]
+                views[f"{rng_id}|{platform_id}|{pe}"] = build_view(
+                    rng_id, pe, platform_id, cur, prev, r_start, r_end, pw, insights, members, guardian, em, wd, scoped_all)
 
     # ---------- scope
     conf = step_conf(em)
     scope = {
-        "personas": [{"id": p, "label": PERSONA_LABELS[p], "users": persona_users.get(p, 0)} for p in
+        "personas": [{"id": p, "label": PERSONA_LABELS[p], "users": persona_users.get(p, 0),
+                      "platform_users": {platform: sum(1 for group, _ in users if group == p)
+                                         for platform, users in platform_persona_users.items()}} for p in
                      ["unregistered", "large_business", "sari_sari", "individual_trader", "individual", "unknown", "fraudster"]],
         "products": [{"id": p, "label": PRODUCT_LABELS[p]} for p in PRODUCTS],
         "ranges": list(RANGES),
@@ -713,7 +745,7 @@ def main():
     }
 
     # ---------- legacy v1 blocks (journeys by persona, overview)
-    legacy = legacy_blocks(clean, now_start, now_days)
+    legacy = legacy_blocks(clean, now_start, now_days, platform_keys[1:])
 
     stuck = stuck_sessions(insights, keep, by_sid)
     hotspots = hotspot_cards(em["taps"])
@@ -753,6 +785,14 @@ def main():
         print("diagnosis:", json.dumps(stats))
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    # ui-v3: three additive blocks (audiences, watch, data_sources) from the same sessions; no existing key changes (pipeline/build_audiences.py)
+    import build_audiences
+    results["meta"]["schema"] = "ui-v3"
+    results.update(build_audiences.build({
+        "all_s": all_s, "clean": clean, "insights": insights, "members": members, "em": em, "guardian": guardian, "results": results,
+        "canon_path": Path(args.events), "out_dir": out.parent / "bq_derived", "as_of": results["meta"]["as_of"], "t_end": t_end, "hidden": {"fraudster", "unknown"},
+        "parse_ts": parse_ts, "humanize": humanize, "pseudo": pseudo, "persona_labels": PERSONA_LABELS, "product_labels": PRODUCT_LABELS,
+        "device_labels": DEVICE_CLASS_LABELS}))
     out.write_text(json.dumps(results, indent=1, allow_nan=False) + "\n", encoding="utf-8")
     print(f"{len(insights)} insights, {len(views)} views, {out.stat().st_size / 1024:.0f} KB -> {out}")
     for i in insights:
@@ -823,7 +863,8 @@ def healthy_insight(iid, screen, cls, title, facts, kind, severity, n, clean, me
                    "score": 0, "per_week_value": 0, "per_week_dollars": 0, "currency": CURRENCY, "assumption": assumption},
         "evidence": {"affected_session_ids": [], "comparison_session_ids": [], "sessions": []},
         "ticket_draft": None, "journey": j, "step": step, "tone": tone, "label": f"{'Warning' if severity == 'warning' else 'Healthy'} · {kind}",
-        "persona_ids": [], "ranges": [r for r, d in RANGES.items() if sum(1 for s in clean if s["dt"] >= t_end - d and member(s)) >= 5],
+        "persona_ids": [], "platform_ids": sorted({s["platform"] for s in clean if member(s)}),
+        "ranges": [r for r, d in RANGES.items() if sum(1 for s in clean if s["dt"] >= t_end - d and member(s)) >= 5],
         "detected_hours_ago": 0, "is_new": False, "replays": 0, "causes": [], "affected_sessions": len(exits),
     }
 
@@ -842,6 +883,7 @@ def pattern_insight(p, title, fact_txt, screen, seg, jid, clean, as_of, t_end):
                    "assumption": "No value assumed: this is expected behavior, not lost customers."},
         "evidence": {"affected_session_ids": [], "comparison_session_ids": [], "sessions": []}, "ticket_draft": None,
         "journey": j, "step": step, "tone": "positive", "label": "Healthy · Expected behavior", "persona_ids": [p["persona"]],
+        "platform_ids": sorted({s["platform"] for s in clean if mem(s)}),
         "ranges": [r for r, d in RANGES.items() if sum(1 for s in clean if s["dt"] >= t_end - d and mem(s)) >= 5],
         "detected_hours_ago": 0, "is_new": False, "replays": 0, "causes": [], "affected_sessions": 0, "pattern": p,
     }
@@ -915,10 +957,13 @@ def carry(vals):
     return out
 
 
-def build_view(rng_id, pe, cur, prev, r_start, r_end, pw, insights, members, guardian, em, wd, all_s):
+def build_view(rng_id, pe, platform_id, cur, prev, r_start, r_end, pw, insights, members, guardian, em, wd, all_s):
     v = {"sessions": len(cur)}
+    selected = persona_selection(pe)
+    applies = lambda i: ((not i["persona_ids"] or selected is None or bool(selected.intersection(i["persona_ids"])))
+                         and (platform_id == "all" or not i.get("platform_ids") or platform_id in i["platform_ids"]))
     # insights that apply
-    ins_ids = [i["id"] for i in insights if rng_id in i["ranges"] and (not i["persona_ids"] or pe == "all" or pe in i["persona_ids"])]
+    ins_ids = [i["id"] for i in insights if rng_id in i["ranges"] and applies(i)]
     v["insight_ids"] = ins_ids
     # kpis
     conv, n_c = completion(cur)
@@ -930,7 +975,7 @@ def build_view(rng_id, pe, cur, prev, r_start, r_end, pw, insights, members, gua
                  or (i["id"] in ins_ids and i["scope"] == "burst")]
     crit = [i for i in insights if i["id"] in ins_ids and i["severity"] == "critical"]
     var = sum(i["impact"]["per_week_value"] for i in insights if i["id"] in ins_ids and i["severity"] in ("critical", "warning"))
-    pids = [i["id"] for i in insights if i["persona_ids"] == [] or pe == "all" or pe in i["persona_ids"]]
+    pids = [i["id"] for i in insights if applies(i)]
     prev_ids = [i for i in insights if i["id"] in pids and in_period(members.get(i["id"], (lambda s: True, None)), prev, pw[0], pw[1])]
     crit_prev = [i for i in prev_ids if i["severity"] == "critical"]
     var_prev = sum(i["impact"]["per_week_value"] for i in prev_ids if i["severity"] in ("critical", "warning"))
@@ -995,7 +1040,7 @@ def build_view(rng_id, pe, cur, prev, r_start, r_end, pw, insights, members, gua
     v["exits"] = {k: exits.get(k, 0) for k in ("ux", "language", "technical", "natural")}
     v["rhythm"] = rhythm_for(cur, r_start, r_end, rng_id, guardian, wd, all_s, exits)
     v["cohorts"] = cohorts_for(cur, prev, all_s)
-    held = sum(1 for s in all_s if s["quarantined"] and r_start <= s["dt"] < r_end and (pe == "all" or s["persona"] == pe))
+    held = sum(1 for s in all_s if s["quarantined"] and r_start <= s["dt"] < r_end)
     v["health"] = health_for(guardian, em, held, r_start, r_end)
     return v
 
@@ -1082,12 +1127,13 @@ def rhythm_for(cur, r_start, r_end, rng_id, guardian, wd, all_s, exits):
         v = s["app_version"]
         if v and (v not in ver_first or s["dt"] < ver_first[v]):
             ver_first[v] = s["dt"]
-    base_day = min(ver_first.values())
-    for v, d in ver_first.items():
-        if d - base_day > timedelta(days=2):
-            for i, (a, b) in enumerate(bs):
-                if a <= d < b:
-                    markers.append({"index": i, "label": f"App {v} rollout"})
+    if ver_first:
+        base_day = min(ver_first.values())
+        for v, d in ver_first.items():
+            if d - base_day > timedelta(days=2):
+                for i, (a, b) in enumerate(bs):
+                    if a <= d < b:
+                        markers.append({"index": i, "label": f"App {v} rollout"})
     tot_f, tot_n = sum(fru), sum(nat)
     if len(fru) >= 2 and sum(fru) > 0:
         peak = max(range(len(fru)), key=lambda i: fru[i])
@@ -1217,19 +1263,22 @@ def product_funnels(clean):
     return out
 
 
-def legacy_blocks(clean, now_start, now_days):
+def legacy_blocks(clean, now_start, now_days, platforms):
     """The v1 shape: journeys[<platform>|<persona>] route maps and the overview views, kept for older readers."""
     t0 = min(s["dt"] for s in clean)
     pos = {}
-    lane_of = {"browse": 0, "register": 1, "login": 2, "topup": 3, "transaction": 4}
+    lane_of = {"browse": 0, "register": 1, "login": 2, "topup": 3, "transaction": 4, "web_checkout": 5}
     for jn, path in JOURNEYS.items():
         for i, sc in enumerate(path):
             pos.setdefault(sc, {"col": i, "lane": lane_of[jn]})
     personas = sorted({s["persona"] for s in clean})
     journeys = {}
-    for pf in ["all", "app"]:
-        for pe in ["all"] + personas:
-            sub = [s for s in clean if s["dt"] >= now_start and (pe == "all" or s["persona"] == pe)]
+    persona_keys = ["all"] + personas + combined_persona_keys()
+    for pf in ["all"] + platforms:
+        for pe in persona_keys:
+            selected = persona_selection(pe)
+            sub = [s for s in clean if s["dt"] >= now_start and (pf == "all" or s["platform"] == pf)
+                   and (selected is None or s["persona"] in selected)]
             views, exits, dwell, edges = Counter(), Counter(), defaultdict(list), Counter()
             for s in sub:
                 prev = None
@@ -1248,8 +1297,9 @@ def legacy_blocks(clean, now_start, now_days):
             journeys[f"{pf}|{pe}"] = {"sessions": len(sub), "nodes": nodes, "edges": [{"from": a, "to": b, "sessions": n} for (a, b), n in sorted(edges.items())]}
     days = sorted({s["dt"].date() for s in clean})
     ov = {}
-    for pe in ["all"] + personas:
-        sub = [s for s in clean if pe == "all" or s["persona"] == pe]
+    for pe in persona_keys:
+        selected = persona_selection(pe)
+        sub = [s for s in clean if selected is None or s["persona"] in selected]
         now = [s for s in sub if s["dt"] >= now_start]
         before = [s for s in sub if s["dt"] < now_start]
 
@@ -1325,7 +1375,8 @@ def stuck_sessions(insights, keep, by_sid):
                 m[2] = round(m[1] + 1, 1)
         done = s["completed"]
         marks.append(["done" if done else "exit", sec(evs[-1])])
-        os_ = "iOS" if s["os"] == "ios" else "Android"
+        os_ = ("Web, desktop" if s.get("device_class") == "web_desktop" else "Web, mobile") if s.get("platform") == "web" \
+            else "iOS" if s["os"] == "ios" else "Android"
         out.append({"id": f"x{len(out) + 1}", "persona": s["persona"], "journey": s["ui_journey"],
                     "who": f"{PERSONA_LABELS.get(s['persona'], s['persona'])}, {os_}" + (f", {PRODUCT_LABELS[s['product']]}" if s["product"] else ""),
                     "outcome": (f"Completed in {sec(evs[-1]):.0f} s" if done else f"Exited after {sec(evs[-1]):.0f} s"),

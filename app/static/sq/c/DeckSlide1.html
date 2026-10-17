@@ -1,0 +1,52 @@
+<section class="sq-slide" style="zoom: {{zoom}}; width: 1280px; height: 720px; box-sizing: border-box; padding: 64px 80px 40px; background: #FFFFFF; font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; color: #202124; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; align-items: center; gap: 12px">
+    <svg width="28" height="28" viewBox="30 30 545 545" aria-hidden="true"><g fill="none" stroke-width="72" stroke-linecap="round"><path d="M165.2 100.8A188 188 0 0 1 358.8 100.8" stroke="#FBBC04"></path><path d="M423.2 165.2A188 188 0 0 1 423.2 358.8" stroke="#4285F4"></path><path d="M358.8 423.2A188 188 0 0 1 165.2 423.2" stroke="#EA4335"></path><path d="M100.8 358.8A188 188 0 0 1 100.8 165.2" stroke="#34A853"></path><path d="M432 432L528 528" stroke="#202124"></path></g><circle cx="262" cy="262" r="34" fill="#4285F4"></circle></svg>
+    <span style="font-size: 18px; line-height: 24px; color: #5F6368">{{eyebrow}}</span>
+    <span style="margin-left: auto; font-size: 16px; color: #5F6368; font-variant-numeric: tabular-nums">{{pos}} / {{count}}</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <h1 style="margin: 0; font-size: 48px; line-height: 56px; font-weight: 400">{{headA}} <span style="font-weight: 500">{{headB}}</span>{{headC}}</h1>
+    <p style="margin: 0; font-size: 24px; line-height: 32px; color: #5F6368">{{sub}}</p>
+  </div>
+
+  <template data-sc="if" value="{{isSummary}}" hint-placeholder-val="{{ true }}">
+    <div style="flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: stretch">
+      <template data-sc="for" list="{{stats}}" as="s" hint-placeholder-count="3">
+        <div style="border: 1px solid #DADCE0; border-radius: 20px; padding: 28px 32px; display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 64px; line-height: 72px; font-variant-numeric: tabular-nums; color: {{s.c}}">{{s.v}}</span>
+          <span style="font-size: 20px; line-height: 28px; color: #3C4043">{{s.label}}</span>
+        </div>
+      </template>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; font-size: 22px; line-height: 30px">
+      <span style="height: 28px; padding: 0 12px; border-radius: 14px; background: #E8F0FE; color: #174EA6; font-size: 15px; font-weight: 500; display: inline-flex; align-items: center">{{whyTag}}</span>
+      {{summaryLine}}
+    </div>
+  </template>
+
+  <template data-sc="if" value="{{isChart}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: grid; grid-template-columns: 1fr 1.4fr; gap: 56px; align-items: center">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <span style="align-self: flex-start; height: 28px; padding: 0 12px; border-radius: 14px; background: #E8F0FE; color: #174EA6; font-size: 15px; font-weight: 500; display: inline-flex; align-items: center">{{whyTag}}</span>
+        <p style="margin: 0; font-size: 26px; line-height: 36px">{{why}}</p>
+        <p style="margin: 0; font-size: 18px; line-height: 26px; color: #5F6368">{{whySub}}</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 22px">
+        <span style="font-size: 16px; font-weight: 500; color: #5F6368">{{chartTitle}}</span>
+        <template data-sc="for" list="{{bars}}" as="b" hint-placeholder-count="3">
+          <div style="display: grid; grid-template-columns: 240px 1fr 80px; gap: 20px; align-items: center; font-size: 20px">
+            <span style="{{b.ls}}">{{b.name}}</span>
+            <span style="position: relative; height: 18px; border-radius: 9px; background: #F1F3F4"><span style="display: block; height: 100%; width: {{b.w}}; border-radius: 9px; background: {{b.c}}"></span></span>
+            <span style="text-align: right; font-variant-numeric: tabular-nums; {{b.ls}}">{{b.v}}</span>
+          </div>
+        </template>
+        <span style="font-size: 15px; color: #5F6368">{{chartNote}}</span>
+      </div>
+    </div>
+  </template>
+
+  <div style="display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid #E8EAED; font-size: 14px; color: #5F6368">
+    <span>{{scopeLine}}</span>
+  </div>
+</section>

@@ -16,6 +16,10 @@ Application Default Credentials, and the page only shows a small summary file th
   python pipeline/bq_source.py load                       # (re)load the table from data/synthetic/events_raw.jsonl
   python pipeline/bq_source.py read --out <raw.jsonl> [--meta app/static/bigquery_source.json]
   python pipeline/bq_source.py compare --a <raw.jsonl> --b <raw.jsonl>   # same events? (ignores key order)
+  python pipeline/bq_source.py load-derived [--dir data/synthetic/bq_derived]   # the derived tables of the v3 build (see build_audiences.py)
+
+Derived tables (same dataset, also labelled synthetic=true; the build writes their NDJSON next to results_v2.json): wallet_orders (completed
+purchases and top-ups, derived 1:1 from the events), audience_members (who is in which audience) and watch_sessions (sampled sessions, timeline as JSON).
 """
 from __future__ import annotations
 
@@ -83,6 +87,34 @@ def load(raw_path: Path) -> None:
     print(f"loaded {n:,} events into {FQ} ({bq.get_table(FQ).num_rows:,} rows)")
 
 
+def load_derived(src: Path) -> None:
+    """Load the derived tables (NDJSON written by build_audiences.py) next to wallet_events. wallet_events itself is not touched."""
+    from google.cloud import bigquery
+    F = bigquery.SchemaField
+    tables = {
+        "wallet_orders": ([F("order_id", "STRING", mode="REQUIRED"), F("user_id", "STRING"), F("product", "STRING"), F("amount_php", "INT64"),
+                           F("ts", "TIMESTAMP"), F("status", "STRING"), F("session_id", "STRING"), F("synthetic", "BOOL")],
+                          "SYNTHETIC. One row per completed transaction or top-up, derived 1:1 from the events of wallet_events. Nothing invented: no refunds, no off-app payments."),
+        "audience_members": ([F("user_id", "STRING", mode="REQUIRED"), F("audience_id", "STRING", mode="REQUIRED"), F("audience_kind", "STRING"),
+                              F("state", "STRING"), F("synthetic", "BOOL")],
+                             "SYNTHETIC. Who is in which audience or behaviour segment; state is the win-back stage or member. Two hidden user groups are left out."),
+        "watch_sessions": ([F("session_id", "STRING", mode="REQUIRED"), F("insight_id", "STRING"), F("user_id", "STRING"), F("persona", "STRING"), F("os", "STRING"),
+                            F("device_class", "STRING"), F("product", "STRING"), F("start_ts", "TIMESTAMP"), F("duration_s", "INT64"), F("outcome", "STRING"),
+                            F("role", "STRING"), F("summary", "STRING"), F("timeline", "JSON"), F("marks", "JSON"), F("synthetic", "BOOL")],
+                           "SYNTHETIC. The sessions sampled for the Watch sessions page, timeline rebuilt from events (plain-English steps)."),
+    }
+    bq = client()
+    for name, (schema, desc) in tables.items():
+        fq, path = f"{PROJECT}.{DATASET}.{name}", src / f"{name}.ndjson"
+        cfg = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON, schema=schema, write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
+        with open(path, "rb") as fh:
+            bq.load_table_from_file(fh, fq, job_config=cfg).result()
+        t = bq.get_table(fq)
+        t.description, t.labels = desc, {"synthetic": "true", "app": "squint"}
+        bq.update_table(t, ["description", "labels"])
+        print(f"loaded {fq}: {bq.get_table(fq).num_rows:,} rows (file has {sum(1 for _ in open(path, encoding='utf-8')):,})")
+
+
 def read(out: Path, meta_path: Path | None) -> None:
     bq = client()
     job = bq.query(f"SELECT raw FROM `{FQ}` ORDER BY line_no")      # the source file's own order (event_id is not unique)
@@ -122,10 +154,13 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("load"); p.add_argument("--input", type=Path, default=DEFAULT_RAW)
     p = sub.add_parser("read"); p.add_argument("--out", type=Path, required=True); p.add_argument("--meta", type=Path, default=None)
+    p = sub.add_parser("load-derived"); p.add_argument("--dir", type=Path, default=ROOT / "data" / "synthetic" / "bq_derived")
     p = sub.add_parser("compare"); p.add_argument("--a", type=Path, required=True); p.add_argument("--b", type=Path, required=True)
     a = ap.parse_args()
     if a.cmd == "load":
         load(a.input)
+    elif a.cmd == "load-derived":
+        load_derived(a.dir)
     elif a.cmd == "read":
         read(a.out, a.meta)
     else:

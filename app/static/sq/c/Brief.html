@@ -1,0 +1,88 @@
+<style>
+  .sqb-sec { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; color: #202124; }
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    html, body { background: #FFFFFF !important; }
+    .sq-noprint { display: none !important; }
+    .sq-bmain { padding: 0 !important; }
+    .sq-bpage { max-width: none !important; }
+    .sq-bart { border: 0 !important; padding: 0 !important; max-width: none !important; margin: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+<div style="min-height: 100vh; background: #F8F9FA; color: #202124; font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px">
+  <div class="sq-noprint"><dc-import name="TopBar" hint-size="100%,64px"></dc-import></div>
+  <div style="display: flex; flex-wrap: wrap; align-items: flex-start">
+    <div class="sq-noprint" style="flex: 0 1 auto; max-width: 100%; min-width: 0"><dc-import name="NavRail" active="brief" hint-size="256px,640px"></dc-import></div>
+    <main class="sq-bmain" style="flex: 999 1 560px; min-width: 0; padding: 28px 32px 64px; box-sizing: border-box">
+      <div class="sq-bpage" style="max-width: 1120px; display: flex; flex-direction: column; gap: 24px">
+
+        <div class="sq-noprint" style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+          <div>
+            <h1 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">Recommendations</h1>
+            <p style="margin: 4px 0 0; color: #5F6368"><span style="font-weight: 500; color: #202124">What do we tell the team this week?</span> One page: the takeaway, three numbers, what to do.</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" class="btn btn-outlined" onClick="{{copyText}}">{{copyLabel}}</button>
+            <button type="button" class="btn btn-outlined" onClick="{{printPage}}">Download PDF</button>
+            <button type="button" class="btn btn-filled" onClick="{{requestShareAccess}}" aria-label="{{shareLabel}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 1 1 8 0v3"></path></svg>{{shareLabel}}</button>
+          </div>
+        </div>
+
+        <div class="sq-noprint"><dc-import name="ScopeBar" hint-size="100%,40px"></dc-import></div>
+
+        <template data-sc="if" value="{{showCombo}}" hint-placeholder-val="{{ false }}">
+          <div class="sq-noprint" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; border-radius: 10px; background: #E8F0FE; color: #174EA6">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16.2v.1"></path></svg>
+            <span style="flex: 1 1 320px">{{comparisonMessage}}</span>
+            <button type="button" class="btn btn-outlined" style="height: 32px; padding: 0 14px; background: #FFFFFF" onclick="{{viewTopOnly}}">View top finding’s scope</button>
+            <button type="button" class="btn btn-outlined" style="height: 32px; padding: 0 14px; background: #FFFFFF" aria-pressed="{{comparisonMode}}" onclick="{{toggleComparison}}">{{comparisonAction}}</button>
+          </div>
+        </template>
+
+        <dc-import name="PersonaCompare" page="brief" hint-size="100%,auto"></dc-import>
+        <template data-sc="if" value="{{notComparisonMode}}" hint-placeholder-val="{{ true }}">
+        <article class="sq-bart" style="width: 100%; box-sizing: border-box; margin: 0 0 0 auto; background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 12px; padding: 48px 56px; display: flex; flex-direction: column; gap: 32px">
+          <header style="display: flex; flex-direction: column; gap: 12px">
+            <div class="cap" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <svg width="20" height="20" viewBox="30 30 545 545" aria-hidden="true"><g fill="none" stroke-width="72" stroke-linecap="round"><path d="M165.2 100.8A188 188 0 0 1 358.8 100.8" stroke="#FBBC04"></path><path d="M423.2 165.2A188 188 0 0 1 423.2 358.8" stroke="#4285F4"></path><path d="M358.8 423.2A188 188 0 0 1 165.2 423.2" stroke="#EA4335"></path><path d="M100.8 358.8A188 188 0 0 1 100.8 165.2" stroke="#34A853"></path><path d="M432 432L528 528" stroke="#202124"></path></g><circle cx="262" cy="262" r="34" fill="#4285F4"></circle></svg>
+              <span>{{b.kicker}}</span>
+            </div>
+            <h2 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">{{b.hA}} <span style="font-weight: 500">{{b.hB}}</span>{{b.hC}}</h2>
+            <p style="margin: 0; font-size: 16px; line-height: 24px; color: #5F6368"><template data-sc="if" value="{{b.leadAI}}" hint-placeholder-val="{{ true }}"><span class="tag tag-ai" style="vertical-align: 2px">AI</span> </template>{{b.lead}}</p>
+          </header>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0; border: 1px solid #E8EAED; border-radius: 8px">
+            <template data-sc="for" list="{{b.nums}}" as="n" hint-placeholder-count="3">
+              <div style="{{n.style}}"><div class="lbl">{{n.label}}</div><div class="num" style="font-size: 24px; line-height: 32px">{{n.value}}</div><div class="num" style="{{n.noteStyle}}">{{n.note}}</div></div>
+            </template>
+          </div>
+
+          <section aria-labelledby="b-do" style="display: flex; flex-direction: column; gap: 18px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; position: relative"><h3 id="b-do" class="sqb-sec">What to do this week, and why</h3><span class="tag tag-ai">AI</span><span class="tag">Calculated</span></div>
+            <template data-sc="for" list="{{b.todo}}" as="t" hint-placeholder-count="3">
+              <div class="li"><span class="n">{{t.n}}</span><div style="display: flex; flex-direction: column; gap: 4px">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px 16px"><span style="color: #202124">{{t.headA}} <span style="font-weight: 500">{{t.headB}}</span>{{t.headC}}<template data-sc="if" value="{{t.hasCtx}}" hint-placeholder-val="{{ false }}"> <span style="color: #5F6368">· {{t.ctx}}</span></template></span><span class="sq-owner-pill">{{t.owner}}</span></div>
+                <p style="margin: 0; color: #5F6368">{{t.why}}</p>
+              </div></div>
+            </template>
+            <template data-sc="if" value="{{b.noTodo}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6368">Nothing needs attention for this scope.</p></template>
+          </section>
+
+          <section aria-labelledby="b-fine" style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><h3 id="b-fine" class="sqb-sec">What to leave alone</h3><span class="tag">Calculated</span></div>
+            <template data-sc="for" list="{{b.keep}}" as="k" hint-placeholder-count="2">
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <span>{{k.headA}} <span style="font-weight: 500">{{k.headB}}</span>{{k.headC}}</span>
+                <span style="color: #5F6368">{{k.why}}</span>
+              </div>
+            </template>
+            <template data-sc="if" value="{{b.noKeep}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6368">Nothing is listed as healthy for this scope.</span></template>
+          </section>
+
+          <footer style="padding-top: 20px; border-top: 1px solid #E8EAED"><p class="cap" style="margin: 0">Synthetic sample</p></footer>
+        </article>
+        </template>
+      </div>
+    </main>
+  </div>
+</div>

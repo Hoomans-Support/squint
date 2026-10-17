@@ -37,3 +37,6 @@ docs/wayfinder-quick-look.pdf
 .firebase/
 firebase-debug.log
 *.rar
+app/static.bak-before-squint/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

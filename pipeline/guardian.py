@@ -60,7 +60,8 @@ STEP_ONGOING = timedelta(hours=6)  # a run that ended this close to the end of t
 STEP_BASE_P1 = 0.75     # assumed skip rate during a silent period (scan score only)
 # Volume is only judged on screens where journeys start: downstream volume depends on the steps before it (an
 # OTP that is not delivered starves the screens after it), and a silent downstream tracker is caught by step_skipped.
-ENTRY_SCREENS = {path[0] for path in JOURNEYS.values()}
+# Prices is an optional browse-only flow whose cohort shrinks as users register; its taper is not telemetry loss.
+ENTRY_SCREENS = {path[0] for path in JOURNEYS.values()} - {"prices"}
 ID_RE = re.compile(r"^(.*?)(\d+)$")
 
 

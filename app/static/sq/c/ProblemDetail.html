@@ -1,0 +1,159 @@
+<div style="min-height: 100vh; background: #F1F3F4; font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px; color: #202124">
+<div style="max-width: 760px; margin: 0 auto; background: #FFFFFF; min-height: 100vh; box-sizing: border-box; border-left: 1px solid #DADCE0; border-right: 1px solid #DADCE0">
+
+<template data-sc="if" value="{{none}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: 48px 28px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+    <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 400">No open problems to show</h1>
+    <p style="margin: 0; color: #5F6368">Nothing is flagged in this scope, so there is no finding to open.</p>
+    <button type="button" class="btn btn-outlined" onClick="{{goBack}}">Back</button>
+  </div>
+</template>
+
+<template data-sc="if" value="{{has}}" hint-placeholder-val="{{ true }}">
+<article aria-labelledby="pd-title">
+  <div style="padding: 16px 20px 20px 28px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <span class="chip" style="background: {{r.sevBg}}; color: {{r.sevFg}}"><span class="dot" style="background: {{r.causeColor}}"></span>{{r.sev}} · {{r.cause}}</span>
+      <span class="cap" style="margin-left: 4px">{{m.pidLabel}}</span>
+      <template data-sc="if" value="{{hasNav}}" hint-placeholder-val="{{ true }}">
+        <span style="display: inline-flex; gap: 2px">
+          <button type="button" data-fk="pd-prev" aria-label="Previous problem" onClick="{{prev}}" style="width: 32px; height: 32px; border-radius: 16px; border: 0; background: transparent; cursor: pointer; color: #5F6368; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+          <button type="button" data-fk="pd-next" aria-label="Next problem" onClick="{{next}}" style="width: 32px; height: 32px; border-radius: 16px; border: 0; background: transparent; cursor: pointer; color: #5F6368; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+        </span>
+      </template>
+      <button type="button" data-fk="pd-close" aria-label="Close and go back" onClick="{{close}}" style="margin-left: auto; width: 40px; height: 40px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; color: #5F6368; border: 0; background: transparent; cursor: pointer; padding: 0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <h1 id="pd-title" data-fk="pd-title" tabindex="-1" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 400; outline: none">{{r.action}} <span style="font-weight: 500">{{r.item}}</span> for {{r.who}}</h1>
+    <template data-sc="if" value="{{hasSub}}" hint-placeholder-val="{{ true }}"><p style="margin: -4px 0 0; color: #5F6368">{{m.sub}}</p></template>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 16px; background: #F8F9FA; border-radius: 12px">
+      <div><div class="lbl">At risk</div><div class="num" style="font-size: 20px; line-height: 28px">{{m.valueText}}<span style="font-size: 13px; color: #5F6368">{{m.valueUnit}}</span></div></div>
+      <div><div class="lbl">Sessions <span class="tag" style="margin-left: 4px">Calculated</span></div><div class="num" style="font-size: 20px; line-height: 28px">{{r.sessions}}</div><div class="cap">Seen at this step</div></div>
+      <div><div class="lbl">Confidence</div><div style="display: flex; align-items: center; gap: 8px; font-size: 20px; line-height: 28px">{{r.confLabel}}
+        <span aria-hidden="true" style="display: inline-flex; gap: 2px; align-items: flex-end"><span style="width: 4px; height: 8px; background: {{conf0}}; border-radius: 1px"></span><span style="width: 4px; height: 12px; background: {{conf1}}; border-radius: 1px"></span><span style="width: 4px; height: 16px; background: {{conf2}}; border-radius: 1px"></span></span>
+      </div><div class="cap">Detected {{r.ageLong}}</div></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <button type="button" data-fk="pd-ticket" class="btn btn-filled" aria-expanded="{{ticketOpen}}" onClick="{{toggleTicket}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M9 6v12" stroke-dasharray="2 2"></path></svg>
+        Draft ticket
+      </button>
+      <template data-sc="if" value="{{hasWatch}}" hint-placeholder-val="{{ true }}"><button type="button" data-fk="pd-watch" class="btn btn-outlined" onClick="{{watch}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"></path></svg>
+        Watch sessions
+      </button></template>
+    </div>
+    <template data-sc="if" value="{{ticketOpen}}" hint-placeholder-val="{{ false }}">
+      <section aria-labelledby="pd-tk" style="border: 1px solid #DADCE0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><h2 id="pd-tk" class="sec" style="padding: 0; font-size: 16px">Ticket draft</h2><span class="tag tag-ai">AI</span><span class="tag">Calculated</span><span class="cap">Built in this browser from the finding. Edit it after you paste it.</span></div>
+        <pre tabindex="0" aria-label="Ticket draft text" style="margin: 0; padding: 12px 14px; max-height: 320px; overflow: auto; border-radius: 8px; background: #F8F9FA; font-family: 'Roboto Mono', ui-monospace, monospace; font-size: 12px; line-height: 18px; white-space: pre-wrap; overflow-wrap: anywhere; color: #3C4043">{{ticket}}</pre>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <button type="button" data-fk="pd-copy" class="btn btn-tonal" onClick="{{copy}}">Copy</button>
+          <button type="button" data-fk="pd-dl" class="btn btn-outlined" onClick="{{download}}">Download .md</button>
+          <button type="button" data-fk="pd-tkclose" class="btn btn-text" onClick="{{toggleTicket}}">Close draft</button>
+          <span class="cap" role="status" aria-live="polite">{{copied}}</span>
+        </div>
+      </section>
+    </template>
+  </div>
+
+  <section class="blk" aria-labelledby="pd-why">
+    <div style="display: flex; align-items: center; gap: 8px"><h2 id="pd-why" class="sec" style="padding: 0">Why</h2><span class="{{m.reasonCls}}">{{m.reasonTag}}</span></div>
+    <p style="margin: 0; font-size: 16px; line-height: 24px; color: #3C4043">{{m.reason}}</p>
+    <template data-sc="if" value="{{hasClaims}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 8px; background: #F8F9FA">
+        <span class="lbl">Evidence behind it</span>
+        <template data-sc="for" list="{{m.claims}}" as="c" hint-placeholder-count="3"><span style="color: #3C4043">{{c.text}}</span></template>
+      </div>
+    </template>
+    <template data-sc="if" value="{{hasCaveats}}" hint-placeholder-val="{{ true }}"><template data-sc="for" list="{{m.caveats}}" as="c" hint-placeholder-count="1"><p class="cap" style="margin: 0">Caveat: {{c}}</p></template></template>
+    <p class="cap" style="margin: 0">{{m.sourceNote}}</p>
+  </section>
+
+  <template data-sc="if" value="{{hasEvidence}}" hint-placeholder-val="{{ true }}">
+  <section class="blk" aria-labelledby="pd-ev">
+    <div style="display: flex; align-items: center; gap: 8px"><h2 id="pd-ev" class="sec" style="padding: 0">The evidence</h2><span class="tag">Calculated</span></div>
+    <div style="display: grid; grid-template-columns: minmax(90px, 130px) minmax(0, 1fr) 56px; gap: 6px 12px; align-items: center">
+      <span></span><span class="cap" style="display: flex; flex-wrap: wrap; gap: 4px 16px"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: {{r.barColor}}"></span>This finding</span><span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: #9AA0A6"></span>Baseline</span></span><span></span>
+      <template data-sc="for" list="{{m.evidence}}" as="e" hint-placeholder-count="3">
+        <span style="color: #3C4043">{{e.label}}</span>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <div class="track"><div style="width: {{e.nowW}}; height: 100%; background: {{r.barColor}}"></div></div>
+          <div class="track"><div style="width: {{e.usualW}}; height: 100%; background: #9AA0A6"></div></div>
+        </div>
+        <span class="num" style="text-align: right; font-weight: 500">{{e.ratio}}</span>
+        <span></span>
+        <span class="cap num" style="margin-bottom: 8px">{{e.now}} vs {{e.usual}}</span>
+        <span></span>
+      </template>
+    </div>
+  </section>
+  </template>
+
+  <template data-sc="if" value="{{hasTl}}" hint-placeholder-val="{{ true }}">
+  <section class="blk" aria-labelledby="pd-tl">
+    <div style="display: flex; align-items: center; gap: 8px"><h2 id="pd-tl" class="sec" style="padding: 0">What happened</h2><span class="tag">Calculated</span></div>
+    <p class="cap" style="margin: 0">{{tl.metric}}, by day. {{tl.onset}}</p>
+    <div role="img" aria-label="Daily rate from {{tl.first}} to {{tl.last}}. {{tl.onset}}" style="display: flex; align-items: flex-end; gap: 2px; height: 72px; border-bottom: 1px solid #DADCE0">
+      <template data-sc="for" list="{{tl.bars}}" as="b" hint-placeholder-count="14"><span title="{{b.title}}" style="flex: 1 1 0; min-width: 2px; height: {{b.h}}; background: {{b.c}}; border-radius: 2px 2px 0 0"></span></template>
+    </div>
+    <div class="cap num" style="display: flex; justify-content: space-between"><span>{{tl.first}}</span><span>{{tl.last}}</span></div>
+  </section>
+  </template>
+
+  <template data-sc="if" value="{{hasWho}}" hint-placeholder-val="{{ true }}">
+  <section class="blk" aria-labelledby="pd-who">
+    <div style="display: flex; align-items: center; gap: 8px"><h2 id="pd-who" class="sec" style="padding: 0">{{m.whoTitle}}</h2><span class="tag">Calculated</span></div>
+    <p class="cap" style="margin: 0">Share of sessions that leave at this step. Red is the group the finding is about, or the worst one.</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px">
+      <template data-sc="for" list="{{m.who}}" as="g" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+          <span class="lbl">{{g.title}}</span>
+          <template data-sc="for" list="{{g.rows}}" as="w" hint-placeholder-count="4">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 2px 8px; align-items: center">
+              <span style="{{w.labelStyle}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap" title="{{w.label}}">{{w.label}}</span><span class="num" style="text-align: right">{{w.pct}}</span>
+              <div class="track" style="grid-column: 1 / -1"><div style="width: {{w.w}}; height: 100%; background: {{w.color}}"></div></div>
+              <span class="cap num" style="grid-column: 1 / -1">{{w.n}}</span>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </section>
+  </template>
+
+  <section class="blk" aria-labelledby="pd-cause">
+    <div style="display: flex; align-items: center; gap: 8px"><h2 id="pd-cause" class="sec" style="padding: 0">Causes ruled in and out</h2><span class="tag">Calculated</span></div>
+    <template data-sc="if" value="{{noCauses}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6368">No competing causes were checked for this finding.</p></template>
+    <template data-sc="if" value="{{hasIn}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span class="lbl">Ruled in</span>
+        <template data-sc="for" list="{{m.ruledIn}}" as="c" hint-placeholder-count="2"><div style="padding: 10px 14px; border: 1px solid #E8EAED; border-radius: 8px"><div style="display: flex; justify-content: space-between; gap: 12px"><span style="font-weight: 500">{{c.title}}</span><span class="num">{{c.share}}</span></div><div class="cap">{{c.why}}</div></div></template>
+      </div>
+    </template>
+    <template data-sc="if" value="{{hasOut}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 8px; background: #F8F9FA">
+        <span class="lbl">Ruled out</span>
+        <template data-sc="for" list="{{m.ruledOut}}" as="c" hint-placeholder-count="2"><span style="color: #3C4043">{{c.title}}<span class="cap"> · {{c.why}}</span></span></template>
+      </div>
+    </template>
+  </section>
+
+  <template data-sc="if" value="{{hasNext}}" hint-placeholder-val="{{ true }}">
+  <section class="blk" aria-labelledby="pd-next">
+    <div style="display: flex; align-items: center; gap: 8px"><h2 id="pd-next" class="sec" style="padding: 0">What to do</h2><span class="tag tag-ai">AI</span></div>
+    <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: #3C4043">
+      <template data-sc="for" list="{{m.next}}" as="n" hint-placeholder-count="3"><li><span style="font-weight: 500; color: #202124">{{n.kind}}.</span> {{n.text}}</li></template>
+    </ol>
+  </section>
+  </template>
+
+  <div class="blk" style="padding-top: 16px; padding-bottom: 28px">
+    <p class="cap" style="margin: 0">Synthetic sample</p>
+  </div>
+</article>
+</template>
+
+</div>
+</div>

@@ -1,0 +1,203 @@
+<div style="min-height: 100vh; background: #F8F9FA; color: #202124; font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px">
+  <dc-import name="TopBar" hint-size="100%,64px"></dc-import>
+  <div style="display: flex; flex-wrap: wrap; align-items: flex-start">
+    <div style="flex: 0 1 auto; max-width: 100%; min-width: 0"><dc-import name="NavRail" active="overview" hint-size="256px,640px"></dc-import></div>
+    <main style="flex: 999 1 560px; min-width: 0; padding: 28px 32px 64px; box-sizing: border-box">
+      <div style="max-width: 1120px; display: flex; flex-direction: column; gap: 24px">
+
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+          <div>
+          <div style="display: flex; align-items: center; gap: 4px">
+              <h1 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">Overview</h1>
+            </div>
+            <p style="margin: 4px 0 0; color: #5F6368"><span style="font-weight: 500; color: #202124">What needs attention {{periodLower}}?</span></p>
+          </div>
+          <a class="btn btn-filled" href="Brief.dc.html">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 13h7M9 17h5"></path></svg>
+            Recommendations
+          </a>
+        </div>
+
+        <dc-import name="ScopeBar" hint-size="100%,40px"></dc-import>
+
+        <template data-sc="if" value="{{showCombo}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; border-radius: 10px; background: #E8F0FE; color: #174EA6">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16.2v.1"></path></svg>
+            <span style="flex: 1 1 320px">{{comboMessage}}</span>
+            <button type="button" class="btn btn-outlined" style="height: 32px; padding: 0 14px; background: #FFFFFF" onclick="{{viewTopOnly}}">View top finding’s scope</button>
+            <button type="button" class="btn btn-outlined" style="height: 32px; padding: 0 14px; background: #FFFFFF" aria-pressed="{{comparisonMode}}" onclick="{{toggleComparison}}">{{comparisonAction}}</button>
+          </div>
+        </template>
+
+        <dc-import name="PersonaCompare" page="overview" hint-size="100%,auto"></dc-import>
+        <template data-sc="if" value="{{notComparisonMode}}" hint-placeholder-val="{{ true }}">
+        <section class="card" aria-labelledby="takeaway" style="padding: 28px 32px; display: flex; flex-direction: column; gap: 24px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+            <h2 id="takeaway" style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 500; color: #1967D2">{{period}}'s takeaway</h2>
+            <span class="tag">Calculated</span>
+            <template data-sc="if" value="{{hasTop}}" hint-placeholder-val="{{ true }}">
+              <span class="rank" style="margin-left: 8px" title="{{top.title}}">{{top.rank}}</span>
+              <span class="chip" style="background: {{top.sevBg}}; color: {{top.sevFg}}"><span class="dot" style="background: {{top.causeColor}}"></span>{{top.sev}} · {{top.cause}}</span>
+              <span class="num" title="{{top.valueTitle}}" style="margin-left: auto; font-size: 20px; line-height: 28px; font-weight: 500; {{top.valueStyle}}"><span class="sq-count">{{top.valueText}}</span><span style="font-size: 13px; font-weight: 400; color: #5F6368">{{top.valueSuffix}}</span></span>
+            </template>
+          </div>
+
+          <template data-sc="if" value="{{hasTop}}" hint-placeholder-val="{{ true }}">
+            <p style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">{{top.action}} <span style="font-weight: 500">{{top.item}}</span> for {{top.who}}<template data-sc="if" value="{{top.hasCtx}}" hint-placeholder-val="{{ false }}"> <span style="font-size: 16px; line-height: 24px; color: #5F6368">· {{top.ctx}}</span></template></p>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 20px 40px; padding: 20px 24px; background: #F8F9FA; border-radius: 12px">
+              <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; align-items: center; gap: 8px"><span class="lbl">Why</span><span class="{{top.whyTagCls}}">{{top.whyTag}}</span></div>
+                <p style="margin: 0; font-size: 20px; line-height: 28px">{{top.why}}</p>
+                <template data-sc="if" value="{{top.hasFact}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; font-size: 13px; color: #5F6368">{{top.topFact}}</p></template>
+              </div>
+              <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; align-items: center; gap: 8px"><span class="lbl">Evidence</span><span class="tag">Calculated</span></div>
+                <div style="display: flex; align-items: center; gap: 16px">
+                  <span class="num sq-count" style="font-size: 32px; line-height: 40px">{{top.evidenceNum}}</span>
+                  <div title="{{top.metricTitle}}" style="position: relative; flex: 1; height: 10px; border-radius: 5px; background: #E8EAED">
+                    <div class="sq-grow-x" style="width: {{top.statW}}; height: 100%; border-radius: 5px; background: {{top.barColor}}"></div>
+                    <template data-sc="if" value="{{top.hasBase}}" hint-placeholder-val="{{ true }}"><span title="{{top.baseTitle}}" style="position: absolute; left: {{top.baseW}}; top: -4px; width: 2px; height: 18px; border-radius: 1px; background: #3C4043"></span></template>
+                  </div>
+                </div>
+                <p style="margin: 0; font-size: 13px; color: #5F6368">{{top.evidenceCap}}</p>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px">
+              <span class="meta" title="{{top.peopleTitle}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16 14.2a4.5 4.5 0 0 1 4.5 5.3"></path></svg><span class="num sq-count">{{top.sessions}}</span><span class="sr">sessions</span></span>
+              <span class="meta" title="{{top.confLabel}} confidence"><span style="display: inline-flex; gap: 2px; align-items: flex-end" aria-hidden="true"><span style="width: 4px; height: 7px; border-radius: 1px; background: {{top.c1}}"></span><span style="width: 4px; height: 11px; border-radius: 1px; background: {{top.c2}}"></span><span style="width: 4px; height: 15px; border-radius: 1px; background: {{top.c3}}"></span></span><span class="sr">{{top.confLabel}} confidence</span></span>
+              <span class="meta" title="Spotted {{top.ageLong}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>{{top.ageShort}}<span class="sr">, spotted {{top.ageLong}}</span></span>
+              <div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+                <a class="btn btn-tonal" data-fk="top-draft" href="#ProblemDetail" onclick="{{top.draft}}">Draft ticket</a>
+                <a class="btn btn-filled" data-fk="top-journeys" href="#FlowPrototype" onclick="{{top.journeys}}">Open in Journeys</a>
+                <a class="ibtn" aria-label="Chat about this finding" title="Chat about this finding" href="#Ask" onclick="{{top.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
+              </div>
+            </div>
+          </template>
+
+          <template data-sc="if" value="{{empty}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 16px; padding: 8px 0 4px">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
+              <div>
+                <p style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">Nothing needs attention in this scope</p>
+                <p style="margin: 4px 0 0; color: #5F6368">{{calmSub}}</p>
+              </div>
+            </div>
+          </template>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px 24px; padding-top: 20px; border-top: 1px solid #F1F3F4">
+            <template data-sc="for" list="{{kpis}}" as="k" hint-placeholder-count="3">
+              <div style="display: flex; flex-direction: column; gap: 2px" title="{{k.title}}">
+                <span class="lbl">{{k.label}}</span>
+                <span class="num" style="font-size: 28px; line-height: 36px"><span class="sq-count">{{k.value}}</span><span style="font-size: 14px; color: #5F6368">{{k.unit}}</span></span>
+                <template data-sc="if" value="{{k.hasDelta}}" hint-placeholder-val="{{ true }}"><span class="sq-count" style="font-size: 13px; line-height: 18px; color: {{k.deltaColor}}; white-space: nowrap">{{k.delta}}</span></template>
+                <template data-sc="if" value="{{k.hasDelta}}" hint-placeholder-val="{{ true }}"><span class="cap num">{{k.base}}</span></template>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <template data-sc="if" value="{{showOthers}}" hint-placeholder-val="{{ true }}">
+        <section class="card" aria-labelledby="problems" style="overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 4px; padding: 16px 20px 8px">
+            <h2 id="problems" class="h2">{{otherTitle}}</h2>
+            <button type="button" aria-label="What this ranking means" aria-expanded="{{infoStr}}" onclick="{{toggleInfo}}" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
+            <span class="tag" style="margin-left: 4px">Calculated</span>
+          </div>
+          <template data-sc="if" value="{{infoOpen}}" hint-placeholder-val="{{ false }}">
+            <div role="note" style="margin: 0 20px 12px; padding: 12px 16px; background: #F8F9FA; border-radius: 8px; font-size: 13px; line-height: 20px; color: #3C4043">
+              Worst problems first — how bad it is, how many people hit it, and how much it's costing. Select a row to see more.
+            </div>
+          </template>
+          <div style="overflow-x: auto; position: relative">
+            <div style="min-width: 760px">
+              <div class="cols" style="padding: 8px 20px; border-bottom: 1px solid #DADCE0" aria-hidden="true">
+                <span></span><span class="lbl">What to do</span><span class="lbl">Leave at this step</span><span class="lbl" style="text-align: right">Weekly risk</span><span class="lbl">Conf.</span><span></span>
+              </div>
+              <template data-sc="for" list="{{rows}}" as="p" hint-placeholder-count="2">
+                <div style="border-bottom: 1px solid #F1F3F4; {{p.openBg}}">
+                  <button type="button" class="row cols" data-fk="{{p.fk}}" onClick="{{p.toggle}}" aria-expanded="{{p.openStr}}">
+                    <span class="rank">{{p.rank}}</span>
+                    <span style="display: flex; align-items: center; gap: 10px; min-width: 0">
+                      <span class="chip" style="background: {{p.sevBg}}; color: {{p.sevFg}}; flex: none"><span class="dot" style="background: {{p.causeColor}}"></span>{{p.sev}} · {{p.cause}}</span>
+                      <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{p.action}} <span style="font-weight: 500">{{p.item}}</span> for {{p.who}}<template data-sc="if" value="{{p.hasCtx}}" hint-placeholder-val="{{ false }}"> <span style="color: #5F6368">· {{p.ctx}}</span></template></span>
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 10px">
+                      <span class="num sq-count" style="font-weight: 500; width: 40px">{{p.statText}}</span>
+                      <span style="position: relative; flex: 1; height: 8px; border-radius: 4px; background: #F1F3F4">
+                        <span class="sq-grow-x" style="display: block; width: {{p.statW}}; height: 100%; border-radius: 4px; background: {{p.barColor}}"></span>
+                        <template data-sc="if" value="{{p.hasBase}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: {{p.baseW}}; top: -4px; width: 2px; height: 16px; border-radius: 1px; background: #3C4043"></span></template>
+                      </span>
+                      <span class="num cap sq-count" title="{{p.baseTitle}}" style="width: 60px; white-space: nowrap">{{p.baseLabel}}</span>
+                    </span>
+                    <span class="num sq-count" title="{{p.valueTitle}}" style="text-align: right; {{p.valueStyle}}">{{p.valueText}}</span>
+                    <span style="display: inline-flex; gap: 2px; align-items: flex-end" title="{{p.confLabel}} confidence"><span class="sr">{{p.confLabel}} confidence</span><span style="width: 4px; height: 7px; border-radius: 1px; background: {{p.c1}}"></span><span style="width: 4px; height: 11px; border-radius: 1px; background: {{p.c2}}"></span><span style="width: 4px; height: 15px; border-radius: 1px; background: {{p.c3}}"></span></span>
+                    <span style="display: inline-flex; color: #5F6368">
+                      <template data-sc="if" value="{{p.open}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 14l5-5 5 5"></path></svg></template>
+                      <template data-sc="if" value="{{p.closed}}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg></template>
+                    </span>
+                  </button>
+                  <template data-sc="if" value="{{p.open}}" hint-placeholder-val="{{ false }}">
+                    <div style="padding: 0 20px 16px 60px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+                      <span style="display: inline-flex; align-items: center; gap: 8px"><span class="lbl">Why</span><span class="{{p.whyTagCls}}">{{p.whyTag}}</span>{{p.why}}</span>
+                      <span class="cap num" style="font-size: 13px"><span class="sq-count">{{p.sessions}}</span> sessions · spotted {{p.ageLong}}</span>
+                      <span style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                        <a class="btn btn-tonal" data-fk="row-draft-{{p.id}}" href="#ProblemDetail" onclick="{{p.draft}}">Draft ticket</a>
+                        <a class="btn btn-filled" data-fk="row-journeys-{{p.id}}" href="#FlowPrototype" onclick="{{p.journeys}}">Open in Journeys</a>
+                        <a class="ibtn" aria-label="Chat about this finding" title="Chat about this finding" href="#Ask" onclick="{{p.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
+                      </span>
+                    </div>
+                  </template>
+                </div>
+              </template>
+              <template data-sc="if" value="{{noOthers}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: 16px 20px 20px; color: #5F6368">No other open problems in this scope.</p></template>
+            </div>
+          </div>
+        </section>
+        </template>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch">
+          <section class="card" aria-labelledby="why-leave" style="min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+              <span style="display: inline-flex; align-items: center; gap: 8px"><h2 id="why-leave" class="h2" style="font-size: 16px">Why people leave</h2><details class="ds-context"><summary aria-label="About why people leave">i</summary><div role="note">This breaks down sessions that ended at a journey step. Bug, wording, and UX exits may point to fixable friction; natural exits are expected behavior and should not be treated as a problem. The counts follow the selected date range, audience, and platform.</div></details></span>
+              <span style="display: inline-flex; align-items: center; gap: 8px"><span class="cap num sq-count">{{exits.total}}</span><span class="tag">Calculated</span></span>
+            </div>
+            <template data-sc="if" value="{{exits.has}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px" role="img" aria-label="{{exits.aria}}">
+                <template data-sc="for" list="{{exits.bars}}" as="b" hint-placeholder-count="4"><div class="sq-grow-x" style="width: {{b.w}}; background: {{b.color}}"></div></template>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px">
+                <template data-sc="for" list="{{exits.legend}}" as="l" hint-placeholder-count="4">
+                  <template data-sc="if" value="{{l.isNatural}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; color: #5F6368" title="No fix needed. Do not add pop-ups to hold these people back."><span class="dot" style="background: {{l.color}}"></span>{{l.name}} <span class="num sq-count">{{l.pct}}</span> · no fix needed</span></template>
+                  <template data-sc="if" value="{{l.isCause}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: {{l.color}}"></span>{{l.name}} <span class="num sq-count" style="font-weight: 500">{{l.pct}}</span></span></template>
+                </template>
+              </div>
+            </template>
+            <template data-sc="if" value="{{exits.none}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6368">No exits in this scope.</p></template>
+          </section>
+          <section class="card" aria-labelledby="checked" style="min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><h2 id="checked" class="h2" style="font-size: 16px">Also checked</h2><details class="ds-context"><summary aria-label="About also checked">i</summary><div role="note">These are signals reviewed for this audience and time range but left out of the fix list: healthy behavior to preserve, plus resolved tracking issues. They help distinguish a real user problem from normal behavior or a known data fault.</div></details><span class="tag">Calculated</span></div>
+            <template data-sc="for" list="{{checked}}" as="c" hint-placeholder-count="2">
+              <template data-sc="if" value="{{c.isKeep}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
+                  <span title="{{c.title}}">{{c.action}} <span style="font-weight: 500">{{c.item}}</span> as is for {{c.who}}<template data-sc="if" value="{{c.hasLink}}" hint-placeholder-val="{{ false }}"> <a href="Audiences.dc.html" style="text-decoration: none; font-size: 13px">· a growth audience →</a></template></span>
+                </div>
+              </template>
+              <template data-sc="if" value="{{c.isRuled}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9"></circle><path d="M8 12h8"></path></svg>
+                  <span title="{{c.title}}">{{c.text}}</span>
+                </div>
+              </template>
+            </template>
+            <template data-sc="if" value="{{noChecked}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6368">Nothing else was checked in this scope.</p></template>
+          </section>
+        </div>
+
+        </template>
+      </div>
+    </main>
+  </div>
+</div>

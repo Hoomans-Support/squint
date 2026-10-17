@@ -1,7 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Squint">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#29A3F7"/><stop offset="1" stop-color="#3A7FE6"/></linearGradient></defs>
-  <rect width="256" height="256" rx="58" fill="url(#g)"/>
-  <path d="M174 94C166 76 150 68 128 68C100 68 86 82 86 99C86 116 100 124 128 132C156 140 172 148 172 167C172 186 154 198 128 198C106 198 90 190 80 174" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="46" cy="200" r="13" fill="none" stroke="#fff" stroke-width="9"/>
-  <circle cx="208" cy="58" r="15" fill="#fff"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 30 545 545" width="64" height="64"><title>Squint</title><g fill="none" stroke-width="72" stroke-linecap="round"><path d="M165.2 100.8A188 188 0 0 1 358.8 100.8" stroke="#FBBC04"/><path d="M423.2 165.2A188 188 0 0 1 423.2 358.8" stroke="#4285F4"/><path d="M358.8 423.2A188 188 0 0 1 165.2 423.2" stroke="#EA4335"/><path d="M100.8 358.8A188 188 0 0 1 100.8 165.2" stroke="#34A853"/><path d="M432 432L528 528" stroke="#202124"/></g><circle cx="262" cy="262" r="34" fill="#4285F4"/></svg>

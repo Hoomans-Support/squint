@@ -5,6 +5,10 @@
   "app": {
    "path": "platform",
    "equals": "app"
+  },
+  "web": {
+   "path": "platform",
+   "equals": "web"
   }
  },
  "maps": {
@@ -76,6 +80,33 @@
    "iPhone 13": "ios",
    "iPhone 14": "ios",
    "iPhone 15": "ios"
+  },
+  "web_pages": {
+   "/landing": "web_landing",
+   "/login": "web_login",
+   "/otp": "web_otp",
+   "/review": "web_review",
+   "/pay": "web_pay",
+   "/done": "web_done"
+  },
+  "web_events": {
+   "page_view": "screen_view",
+   "page_exit": "screen_leave",
+   "click": "click",
+   "field_focus": "form_focus",
+   "rage_click": "rage_click",
+   "dead_click": "dead_tap",
+   "back_nav": "back",
+   "error": "error",
+   "tab_closed": "session_end"
+  },
+  "web_steps": {
+   "/landing": "start",
+   "/login": "phone",
+   "/otp": "otp",
+   "/review": "details",
+   "/pay": "checkout",
+   "/done": "done"
   }
  },
  "known_props": {
@@ -106,6 +137,36 @@
    ],
    "params": [
     "time_on_screen_ms",
+    "error_code",
+    "product",
+    "amount",
+    "tap_x",
+    "tap_y"
+   ]
+  },
+  "web": {
+   "": [
+    "_dataset",
+    "platform",
+    "event_id",
+    "session_id",
+    "user_id",
+    "occurred_at",
+    "event",
+    "page",
+    "element_id",
+    "traits",
+    "context",
+    "properties"
+   ],
+   "traits": [
+    "segment"
+   ],
+   "context": [
+    "browser_class"
+   ],
+   "properties": [
+    "time_on_page_ms",
     "error_code",
     "product",
     "amount",
@@ -156,6 +217,40 @@
    "dataset": "_dataset",
    "tap_x": "params.tap_x",
    "tap_y": "params.tap_y"
+  },
+  "web": {
+   "platform": {
+    "const": "web"
+   },
+   "event_id": "event_id",
+   "session_id": "session_id",
+   "user_id": "user_id",
+   "ts": {
+    "path": "occurred_at",
+    "transform": "iso8601"
+   },
+   "event_type": {
+    "path": "event",
+    "map": "web_events"
+   },
+   "screen": {
+    "path": "page",
+    "map": "web_pages"
+   },
+   "step": {
+    "path": "page",
+    "map": "web_steps"
+   },
+   "element": "element_id",
+   "persona": "traits.segment",
+   "device_class": "context.browser_class",
+   "product": "properties.product",
+   "amount_php": "properties.amount",
+   "dwell_ms": "properties.time_on_page_ms",
+   "error_code": "properties.error_code",
+   "dataset": "_dataset",
+   "tap_x": "properties.tap_x",
+   "tap_y": "properties.tap_y"
   }
  }
 }

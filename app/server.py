@@ -33,8 +33,8 @@ except ImportError:      # image built without app/brief_ai.py: no Brief rewrite
         return {"enabled": False}
 
 # Scripts, fetches and images: same origin only. style-src needs 'unsafe-inline' because app.js sets SVG style attributes.
-CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-       "connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; "
+       "connect-src 'self'; font-src 'self' https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 
 
 @app.get("/")

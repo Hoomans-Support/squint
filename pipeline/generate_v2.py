@@ -5,8 +5,8 @@ ALL DATA PRODUCED HERE IS SYNTHETIC. Label it as such in the UI, the deck and th
 Brief and decided defaults: docs/smartsari-dataset-spec.md (the contract). Deterministic for a seed.
 
 Emits source-shaped RAW app events (JSON Lines, one event per line) plus ground_truth.json with the
-measured value of every planted pattern. 1,000 users: 200 unregistered and 800 registered (large
-business 160, sari-sari store 400, individual trader 80, individual 80, unknown 40, fraudster 40).
+measured value of every planted pattern. 4,000 users: 800 unregistered and 3,200 registered (large
+business 640, sari-sari store 1,600, individual trader 320, individual 320, unknown 160, fraudster 160).
 Android / iOS 50/50, at most 5 user ids per device id. Window 2026-09-15 to 2026-10-15 UTC.
 
 Every user has at least 5 completed attempts per scenario that applies to their persona (unregistered:
@@ -19,6 +19,12 @@ Planted (see ground_truth.json):
   P2       large_business tops up above PHP 50,000 in most top-ups; everyone else stays under PHP 5,000
   P3       sari_sari buys eload in ~70% of transactions (expected behavior, not a problem)
   P4       individual_trader abandons send_money at checkout ~55% of the time (others ~5%)
+  P5       sari_sari on an android_low device abandons topup_confirm ~70% of the time (others ~5%): dead and
+           rage taps near the bottom of the screen, no error code (the button is effectively unreachable, not broken)
+  P7       individual on iOS abandons login_phone ~65% of the time (others ~2%): an autofill bug mangles the
+           phone number, so verification keeps failing until most people give up
+  P8       large_business on an android_low device abandons topup_amount ~65% of the time (others ~4%): the
+           numeric keypad truncates large top-up amounts, so Continue stays dead or shows an occasional format error
   M1       fraudsters: bursts, odd hours, failed attempts, up to 5 users per device
   M2       unregistered users open prices repeatedly before registering (natural exit)
   G1-G4    telemetry faults for the Guardian (kyc_selfie tracker silent on 4.12, 3.2% row loss on
@@ -46,8 +52,10 @@ START = datetime(2026, 9, 15, tzinfo=UTC)
 DAYS = 30
 END = START + timedelta(days=DAYS)
 
-POPULATION = [("unregistered", 200), ("large_business", 160), ("sari_sari", 400), ("individual_trader", 80),
-              ("individual", 80), ("unknown", 40), ("fraudster", 40)]
+# Four times the original population gives small platform/persona slices enough
+# observations to show measured rates in the selected 7-day view.
+POPULATION = [("unregistered", 800), ("large_business", 640), ("sari_sari", 1600), ("individual_trader", 320),
+              ("individual", 320), ("unknown", 160), ("fraudster", 160)]
 
 # planted values
 OTP_START, OTP_END = datetime(2026, 10, 9, 2, tzinfo=UTC), datetime(2026, 10, 9, 10, tzinfo=UTC)
@@ -56,6 +64,14 @@ TOPUP_BIG_MIN, TOPUP_SMALL_MAX = 50_000, 4_999
 LARGE_TOPUP_SHARE = 0.85
 ELOAD_SHARE = 0.70
 P4_CONTINUE = 0.45
+CONF_OOS_PERSONA, CONF_OOS_DEVICE, CONF_OOS_SCREEN = "sari_sari", "android_low", "topup_confirm"
+CONF_OOS_CONTINUE = 0.30         # the promo banner on small/old screens pushes Confirm out of reach: no error, just dead/rage taps
+P6_DEVICE, P6_SCREEN = "web_mobile", "web_pay"
+P6_CONTINUE = 0.35               # the bank redirect loses the session in a mobile in-app browser far more than on desktop
+P7_PERSONA, P7_DEVICE, P7_SCREEN = "individual", "ios", "login_phone"
+P7_CONTINUE = 0.35               # an iOS autofill bug mangles the phone field; verification keeps failing until most people give up
+P8_PERSONA, P8_DEVICE, P8_SCREEN = "large_business", "android_low", "topup_amount"
+P8_CONTINUE = 0.35               # the numeric keypad truncates large top-up amounts past a few digits; Continue stays dead
 V412_DATE = datetime(2026, 10, 6, tzinfo=UTC)
 V412_SHARE = 0.60
 ANDROID_FIX = datetime(2026, 9, 27, tzinfo=UTC)          # Android runs 4.11.1 before this, 4.11.2 after
@@ -113,6 +129,24 @@ EVT_APP = {"screen_view": "screen_view", "screen_leave": "screen_exit", "click":
            "rage_click": "rage_tap", "dead_tap": "dead_tap", "back": "back_press", "error": "error",
            "session_end": "app_background"}
 SCREEN_RAW = {s: "".join(w.capitalize() for w in s.split("_")) + "Screen" for s in SPEC}
+
+# --- web_checkout: a merchant-site bill-pay redirect, platform=web only. Own screens, own raw shape (see render_raw_web),
+# own browser_class dimension (web_desktop/web_mobile) instead of device_class. Not a mirror of the app journeys above.
+WEB_PRODUCTS = ["eload", "water_bill", "electricity_bill", "game_voucher", "cable_internet", "postpaid_telecom"]
+WEB_SPEC = {   # screen: (median dwell ms, sigma, focus elements, cta element)
+    "web_landing": (5000, .4, [], "continue_btn"),
+    "web_login": (11000, .4, ["phone"], "continue_btn"),
+    "web_otp": (16000, .5, ["otp_input"], "verify_btn"),
+    "web_review": (14000, .45, [], "pay_btn"),
+    "web_pay": (9000, .4, [], "confirm_btn"),
+    "web_done": (4000, .3, [], None),
+}
+WEB_P_CONT = {"web_landing": .97, "web_login": .96, "web_otp": .94, "web_review": .95, "web_pay": .93}
+WEB_ERROR_CODES = {"web_otp": "otp_invalid", "web_pay": "session_expired"}
+EVT_WEB = {"screen_view": "page_view", "screen_leave": "page_exit", "click": "click", "form_focus": "field_focus",
+           "rage_click": "rage_click", "dead_tap": "dead_click", "back": "back_nav", "error": "error",
+           "session_end": "tab_closed"}
+PAGE_RAW = {s: "/" + s.replace("web_", "").replace("_", "-") for s in WEB_SPEC}   # e.g. web_review -> "/review"
 LOW_MODELS = [("Redmi 9A", "10"), ("Samsung Galaxy A03", "11"), ("Infinix Smart 6", "11"), ("Realme C11", "10"),
               ("Oppo A15", "11"), ("Vivo Y12", "10")]
 MID_MODELS = [("Samsung Galaxy S23", "14"), ("Pixel 7", "14"), ("Xiaomi 13", "13"), ("Oppo Reno 10", "13"),
@@ -274,11 +308,11 @@ def simulate(rng, user: dict, journey: str, t0: datetime, product: str | None):
     out = {"user": user["uid"], "persona": persona, "journey": journey, "product": product, "amount": amount,
            "t0": t0, "ver": ver, "completed": False, "last": None, "stalled": False, "in_otp_window": False,
            "p4_fail": False, "back": 0, "rage": 0, "dead": 0, "errors": 0, "otp_exit": False, "screens": set(),
-           "dev": dev["id"]}
+           "dev": dev["id"], "platform": "app"}
 
     def add(ts, etype, screen, element=None, **kw):
         e = {"ts": ts, "type": etype, "screen": screen, "element": element, **kw}
-        if etype in ("click", "rage_click", "dead_tap") and element:
+        if etype in ("click", "rage_click", "dead_tap") and element and "tap_x" not in e:
             cx, cy = ELEMENT_POS.get((screen, element), ELEMENT_POS.get((screen, "*"), (0.5, 0.85)))
             sg = 0.02 if etype == "rage_click" and element in ("resend", "pay") else 0.045
             e["tap_x"], e["tap_y"] = round(min(max(rng.gauss(cx, sg), 0), 1), 3), round(min(max(rng.gauss(cy, sg), 0), 1), 3)
@@ -331,6 +365,12 @@ def simulate(rng, user: dict, journey: str, t0: datetime, product: str | None):
         p = P_CONT_FRAUD.get(screen, P_CONT.get(screen, 1.0)) if persona == "fraudster" else P_CONT.get(screen, 1.0)
         if persona != "fraudster" and product and (product, screen) in P_CONT_PRODUCT:
             p = P_CONT_PRODUCT[(product, screen)]
+        if screen == CONF_OOS_SCREEN and persona == CONF_OOS_PERSONA and dev["cls"] == CONF_OOS_DEVICE:
+            p = CONF_OOS_CONTINUE
+        if screen == P7_SCREEN and persona == P7_PERSONA and dev["cls"] == P7_DEVICE:
+            p = P7_CONTINUE
+        if screen == P8_SCREEN and persona == P8_PERSONA and dev["cls"] == P8_DEVICE:
+            p = P8_CONTINUE
         stalled = False
         reason_back = False
         if screen == "otp":
@@ -366,6 +406,38 @@ def simulate(rng, user: dict, journey: str, t0: datetime, product: str | None):
                 if rng.random() < .35:
                     out["errors"] += 1
                     extras.append((fr(.75, .95), "error", "pay", {"error_code": "payment_timeout"}))
+            elif screen == CONF_OOS_SCREEN and persona == CONF_OOS_PERSONA and dev["cls"] == CONF_OOS_DEVICE:
+                # the Confirm button is pushed toward the bottom edge of the screen: taps land near it, not on it, and nothing errors
+                dwell = lognorm(rng, 30000, .35)
+                oos_y = lambda: round(min(rng.gauss(0.97, 0.015), 1.0), 3)
+                k = rng.randint(2, 4)
+                out["dead"] += k
+                extras += [(fr(.5, .95), "dead_tap", cta, {"tap_x": 0.5, "tap_y": oos_y()}) for _ in range(k)]
+                j = rng.randint(2, 4)
+                out["rage"] += j
+                extras += [(fr(.3, .6) + 150 * x, "rage_click", cta, {"tap_x": 0.5, "tap_y": oos_y()}) for x in range(j)]
+            elif screen == P7_SCREEN and persona == P7_PERSONA and dev["cls"] == P7_DEVICE:
+                # autofill writes a mangled phone number into the field; verification fails, a couple of retries, then most give up
+                out["errors"] += 1
+                extras.append((fr(.55, .8), "error", "phone", {"error_code": "phone_format_invalid"}))
+                if rng.random() < .4:
+                    k = rng.randint(2, 4)
+                    out["rage"] += k
+                    extras += [(fr(.7, .9) + 200 * j, "rage_click", "login", {}) for j in range(k)]
+                if rng.random() < .25:
+                    out["dead"] += 1
+                    extras.append((fr(.8, .92), "dead_tap", "login", {}))
+            elif screen == P8_SCREEN and persona == P8_PERSONA and dev["cls"] == P8_DEVICE:
+                # the keypad truncates the amount past a few digits; Continue looks tappable but the form never validates
+                k = rng.randint(2, 4)
+                out["dead"] += k
+                extras += [(fr(.5, .9), "dead_tap", cta, {}) for _ in range(k)]
+                j = rng.randint(1, 3)
+                out["rage"] += j
+                extras += [(fr(.3, .6) + 150 * x, "rage_click", cta, {}) for x in range(j)]
+                if rng.random() < .2:
+                    out["errors"] += 1
+                    extras.append((fr(.7, .9), "error", "amount", {"error_code": "amount_format_error"}))
             elif persona == "fraudster" and screen in ERROR_CODES and rng.random() < .6:
                 out["errors"] += 1
                 extras.append((fr(.7, .95), "error", None, {"error_code": {"otp": "otp_invalid", "txn_checkout": "risk_declined", "topup_confirm": "limit_exceeded"}.get(screen, ERROR_CODES[screen])}))
@@ -420,6 +492,131 @@ def simulate(rng, user: dict, journey: str, t0: datetime, product: str | None):
                           [(5000, "click", cta, {})] if cta else [])
         t = t_end + timedelta(milliseconds=rng.randint(300, 2500))
     return ev, out
+
+
+def simulate_web(rng, user: dict, t0: datetime, product: str, browser_class: str):
+    """One platform=web session: a merchant-site bill-pay redirect. Simpler than simulate() on purpose
+    (no OTP-outage/fraud/product-reason branches; those are app-only stories). Returns (events, outcome)."""
+    persona = user["persona"]
+    path = JOURNEYS["web_checkout"]
+    ev: list[dict] = []
+    amount = txn_amount(rng, product)
+    out = {"user": user["uid"], "persona": persona, "journey": "web_checkout", "product": product, "amount": amount,
+           "t0": t0, "ver": None, "completed": False, "last": None, "stalled": False, "in_otp_window": False,
+           "p4_fail": False, "back": 0, "rage": 0, "dead": 0, "errors": 0, "otp_exit": False, "screens": set(),
+           "dev": None, "platform": "web", "device_class": browser_class}
+
+    def add(ts, etype, screen, element=None, **kw):
+        e = {"ts": ts, "type": etype, "screen": screen, "element": element, **kw}
+        if etype in ("click", "rage_click", "dead_tap") and element and "tap_x" not in e:
+            cx, cy = ELEMENT_POS.get((screen, element), (0.5, 0.85))
+            e["tap_x"], e["tap_y"] = round(min(max(rng.gauss(cx, 0.045), 0), 1), 3), round(min(max(rng.gauss(cy, 0.045), 0), 1), 3)
+        if screen in ("web_review", "web_pay", "web_done"):
+            e["product"] = product
+            e["amount"] = amount
+        ev.append(e)
+
+    def visit(screen, t, dwell, extras=()):
+        add(t, "screen_view", screen)
+        for off, et, el, kw in extras:
+            add(t + timedelta(milliseconds=min(off, dwell - 1)), et, screen, el, **kw)
+        t_end = t + timedelta(milliseconds=dwell)
+        if screen not in TERMINAL_SCREENS:
+            add(t_end, "screen_leave", screen, dwell_ms=dwell)
+        out["screens"].add(screen)
+        out["last"] = screen
+        return t_end
+
+    t = t0
+    for i, screen in enumerate(path):
+        med, sig, focus, cta = WEB_SPEC[screen]
+        dwell = lognorm(rng, med, sig)
+        extras = []
+        fr = lambda a, b: int(dwell * rng.uniform(a, b))
+        if focus and rng.random() < 0.3:
+            extras.append((fr(.1, .3), "form_focus", focus[0], {}))
+        elif cta and rng.random() < 0.4:
+            extras.append((fr(.85, .95), "click", cta, {}))
+        terminal = screen in TERMINAL_SCREENS
+        p = WEB_P_CONT.get(screen, 1.0)
+        if screen == P6_SCREEN and browser_class == P6_DEVICE:
+            p = P6_CONTINUE
+        cont = True if terminal else rng.random() < p
+        if not cont:
+            if screen == P6_SCREEN and browser_class == P6_DEVICE:
+                # the bank redirect does not hand control back to the merchant tab: no error most of the time, just a dead page
+                r = rng.random()
+                if r < .5:
+                    pass    # just leaves, long idle dwell already covers this
+                elif r < .8:
+                    out["back"] += 1
+                    extras.append((fr(.6, .9), "back", None, {}))
+                else:
+                    out["errors"] += 1
+                    extras.append((fr(.7, .9), "error", None, {"error_code": WEB_ERROR_CODES[screen]}))
+                dwell = lognorm(rng, 42000, .4)
+            elif screen in WEB_ERROR_CODES and rng.random() < .25:
+                out["errors"] += 1
+                extras.append((fr(.7, .9), "error", None, {"error_code": WEB_ERROR_CODES[screen]}))
+        if cta and rng.random() < P_DEAD:
+            out["dead"] += 1
+            extras.append((fr(.8, .9), "dead_tap", cta, {}))
+        t_end = visit(screen, t, dwell, extras)
+        if not cont:
+            add(t_end + timedelta(milliseconds=rng.randint(50, 500)), "session_end", screen)
+            return ev, out
+        if terminal:
+            out["completed"] = True
+            add(t_end + timedelta(milliseconds=rng.randint(50, 500)), "session_end", screen)
+            return ev, out
+        t = t_end + timedelta(milliseconds=rng.randint(200, 1200))
+    return ev, out
+
+
+def build_web(seed: int, users: list):
+    """platform=web sessions: a separate RNG stream (seed+50) so the app-only generation above is never perturbed.
+    Reuses the same registered users (not a new population) for a bounded share of them, personas that plausibly
+    pay a bill from a merchant link: large_business, sari_sari, individual_trader, individual. Unregistered/unknown/
+    fraudster are not part of this story."""
+    rng = random.Random(seed + 50)
+    eligible = [u for u in users if u["persona"] in ("large_business", "sari_sari", "individual_trader", "individual")]
+    web_sessions, web_events = [], []
+    for user in eligible:
+        if rng.random() >= 0.35:      # not everyone pays a bill from a web link
+            continue
+        n = rng.choice([1, 1, 2, 2, 3])
+        for _ in range(n):
+            t0 = sample_time(rng, user["persona"])
+            product = rng.choice(WEB_PRODUCTS)
+            browser_class = "web_mobile" if rng.random() < 0.6 else "web_desktop"
+            ev, out = simulate_web(rng, user, t0, product, browser_class)
+            out["sno"] = len(web_sessions)
+            web_sessions.append(out)
+            for i, e in enumerate(ev):
+                web_events.append((e["ts"], out["sno"], i, e, user))
+    return web_sessions, web_events
+
+
+def render_raw_web(user: dict, sid: str, e: dict, n: int, browser_class: str) -> dict:
+    """Own raw shape on purpose (page/event/properties/context, not screen_name/event_name/params/device_info):
+    looks like a real web analytics export, distinct from the app SDK shape above (same precedent as dining's
+    own raw events, but as a second named source in the same mapping file, not a second dataset)."""
+    ts = e["ts"]
+    props = {}
+    if e.get("dwell_ms") is not None:
+        props["time_on_page_ms"] = e["dwell_ms"]
+    for k in ("error_code", "product", "amount", "tap_x", "tap_y"):
+        if e.get(k) is not None:
+            props[k] = e[k]
+    rec = {"_dataset": DATASET, "platform": "web", "event_id": f"evt_{n:07d}", "session_id": sid,
+           "user_id": user["uid"], "occurred_at": ts.astimezone(JKT).isoformat(timespec="milliseconds"),
+           "event": EVT_WEB[e["type"]], "page": PAGE_RAW[e["screen"]],
+           "traits": {"segment": user["persona"]}, "context": {"browser_class": browser_class}}
+    if e.get("element"):
+        rec["element_id"] = e["element"]
+    if props:
+        rec["properties"] = props
+    return rec
 
 
 def render_raw(user: dict, sid: str, e: dict, n: int, rng, ver: str) -> dict:
@@ -498,11 +695,18 @@ def build(seed: int):
                 t = sample_time(rng, persona) if persona != "fraudster" else plan_times(rng, persona, 1)[0]
                 prod = rng.choices(PRODUCTS, pw[persona])[0] if j == "transaction" else None
                 done[j] += run(user, j, t, prod)["completed"]
+    web_sessions, web_events = build_web(seed, users)      # independent RNG stream (seed+50): never touches `rng` above
+    offset = len(sessions)
+    for s in web_sessions:
+        s["sno"] += offset
+    for ts, sno, i, e, user in web_events:
+        all_events.append((ts, sno + offset, i, e, user))
+    sessions.extend(web_sessions)
     all_events.sort(key=lambda x: (x[0], x[1], x[2]))
     return users, devices, sessions, all_events
 
 
-def assemble(seed: int, all_events: list, rng, ver_of: list):
+def assemble(seed: int, all_events: list, rng, sess_of: list):
     """Assign ids, then apply the delivery faults that happen after the id is assigned."""
     rows, dup_events, lost = [], Counter(), Counter()
     by_day = Counter(e[0].date() for e in all_events)
@@ -510,7 +714,11 @@ def assemble(seed: int, all_events: list, rng, ver_of: list):
     day_idx = [i for i, e in enumerate(all_events) if e[0].date() == G2_DAY.date()]
     lose = set(rng.sample(day_idx, lose_budget))
     for n, (ts, sno, i, e, user) in enumerate(all_events, 1):
-        rec = render_raw(user, f"s_{sno + 1:06d}", e, n, rng, ver_of[sno])
+        sess = sess_of[sno]
+        if sess.get("platform") == "web":
+            rec = render_raw_web(user, f"s_{sno + 1:06d}", e, n, sess["device_class"])
+        else:
+            rec = render_raw(user, f"s_{sno + 1:06d}", e, n, rng, sess["ver"])
         if n - 1 in lose:
             lost["lost_rows"] += 1
             lost[e["type"]] += 1
@@ -582,6 +790,41 @@ def ground_truth(seed, users, devices, sessions, n_rows, dup, lost, n_events_bef
           "trader_other_products_abandon_rate": rate(exits_at("txn_checkout", [s for s in co if s["persona"] == "individual_trader" and s["product"] != "send_money"]), len([s for s in co if s["persona"] == "individual_trader" and s["product"] != "send_money"])),
           "send_money_other_personas_abandon_rate": rate(exits_at("txn_checkout", [s for s in co if s["persona"] != "individual_trader" and s["product"] == "send_money"]), len([s for s in co if s["persona"] != "individual_trader" and s["product"] == "send_money"]))}
 
+    dev_cls = {d["id"]: d["cls"] for d in devices}
+    oos = [s for s in tops if s["persona"] == CONF_OOS_PERSONA and dev_cls.get(s["dev"]) == CONF_OOS_DEVICE]
+    oos_rest = [s for s in tops if not (s["persona"] == CONF_OOS_PERSONA and dev_cls.get(s["dev"]) == CONF_OOS_DEVICE)]
+    p5 = {"segment": {"persona": CONF_OOS_PERSONA, "device_class": CONF_OOS_DEVICE}, "screen": CONF_OOS_SCREEN,
+          "segment_sessions": len(oos), "segment_abandon_rate": rate(exits_at(CONF_OOS_SCREEN, oos), len(oos)),
+          "others_abandon_rate": rate(exits_at(CONF_OOS_SCREEN, oos_rest), len(oos_rest)),
+          "segment_dead_taps": sum(s["dead"] for s in oos), "segment_rage_taps": sum(s["rage"] for s in oos),
+          "segment_error_sessions": sum(s["errors"] > 0 for s in oos)}
+
+    log_ph = reached(P7_SCREEN, S)
+    p7seg = [s for s in log_ph if s["persona"] == P7_PERSONA and dev_cls.get(s["dev"]) == P7_DEVICE]
+    p7rest = [s for s in log_ph if not (s["persona"] == P7_PERSONA and dev_cls.get(s["dev"]) == P7_DEVICE)]
+    p7 = {"segment": {"persona": P7_PERSONA, "device_class": P7_DEVICE}, "screen": P7_SCREEN,
+          "segment_sessions": len(p7seg), "segment_abandon_rate": rate(exits_at(P7_SCREEN, p7seg), len(p7seg)),
+          "others_abandon_rate": rate(exits_at(P7_SCREEN, p7rest), len(p7rest)),
+          "segment_error_sessions": sum(s["errors"] > 0 for s in p7seg), "segment_rage_taps": sum(s["rage"] for s in p7seg)}
+
+    topam = reached(P8_SCREEN, S)
+    p8seg = [s for s in topam if s["persona"] == P8_PERSONA and dev_cls.get(s["dev"]) == P8_DEVICE]
+    p8rest = [s for s in topam if not (s["persona"] == P8_PERSONA and dev_cls.get(s["dev"]) == P8_DEVICE)]
+    p8 = {"segment": {"persona": P8_PERSONA, "device_class": P8_DEVICE}, "screen": P8_SCREEN,
+          "segment_sessions": len(p8seg), "segment_abandon_rate": rate(exits_at(P8_SCREEN, p8seg), len(p8seg)),
+          "others_abandon_rate": rate(exits_at(P8_SCREEN, p8rest), len(p8rest)),
+          "segment_dead_taps": sum(s["dead"] for s in p8seg), "segment_rage_taps": sum(s["rage"] for s in p8seg),
+          "segment_error_sessions": sum(s["errors"] > 0 for s in p8seg)}
+
+    web = [s for s in S if s["journey"] == "web_checkout"]
+    wpay = reached(P6_SCREEN, web)
+    wmob = [s for s in wpay if s.get("device_class") == P6_DEVICE]
+    wdesk = [s for s in wpay if s.get("device_class") != P6_DEVICE]
+    p6 = {"platform": "web", "segment": {"device_class": P6_DEVICE}, "screen": P6_SCREEN,
+          "segment_sessions": len(wmob), "segment_abandon_rate": rate(exits_at(P6_SCREEN, wmob), len(wmob)),
+          "others_abandon_rate": rate(exits_at(P6_SCREEN, wdesk), len(wdesk)), "others_sessions": len(wdesk),
+          "web_sessions_total": len(web)}
+
     fr = [s for s in S if s["persona"] == "fraudster"]
     nf = [s for s in S if s["persona"] != "fraudster" and s["journey"] != "browse"]
     fr_dev = [d for d in devices if any(u in {x["uid"] for x in users if x["persona"] == "fraudster"} for u in d["users"])]
@@ -629,7 +872,7 @@ def ground_truth(seed, users, devices, sessions, n_rows, dup, lost, n_events_bef
                        "device_classes": dict(Counter(d["cls"] for d in devices)),
                        "min_completed_attempts": min_done},
         "control": ctrl, "_g3": g3, "_span_h": span_h,
-        "measured": {"P1": p1, "P2": p2, "P3": p3, "P4": p4, "M1": m1, "M2": m2},
+        "measured": {"P1": p1, "P2": p2, "P3": p3, "P4": p4, "P5": p5, "P6": p6, "P7": p7, "P8": p8, "M1": m1, "M2": m2},
         "faults": {"G1": g1, "G2": {"day_utc": G2_DAY.date().isoformat(), "planted_loss": G2_LOSS, "rows_lost": lost["lost_rows"]},
                    "G3": g3, "G4": {"screen": "txn_checkout", "os": "android", "from_utc": iso_ms(G4_START), "to_utc": iso_ms(G4_END),
                                     "duplicated_events": dup["duplicated"], "fixed_in": "4.11.2", "status": "resolved"}},
@@ -645,7 +888,7 @@ def main():
     users, devices, sessions, all_events = build(args.seed)
     rng = random.Random(args.seed + 2)
     day_total = sum(e[0].date() == G2_DAY.date() for e in all_events)
-    rows, dup, lost = assemble(args.seed, all_events, rng, [s["ver"] for s in sessions])
+    rows, dup, lost = assemble(args.seed, all_events, rng, sessions)
     gt = ground_truth(args.seed, users, devices, sessions, len(rows), dup, lost, len(all_events))
     gt["faults"]["G2"]["events_that_day_before_loss"] = day_total
     gt["faults"]["G2"]["measured_loss"] = rate(lost["lost_rows"], day_total)
@@ -680,6 +923,27 @@ def add_expectations(gt: dict) -> None:
          "expected_class": "technical_bug_or_ux_friction",
          "expected_signal": "abandon at checkout far above everyone else, with rage taps, dead taps and payment_timeout errors",
          "measured": m["P4"]},
+        {"id": "P5_confirm_button_out_of_screen", "kind": "problem", "screen": CONF_OOS_SCREEN, "scope": "segment",
+         "segment": {"persona": CONF_OOS_PERSONA, "device_class": CONF_OOS_DEVICE},
+         "expected_class": "technical_bug_or_ux_friction",
+         "expected_signal": "abandon at topup_confirm far above everyone else, with dead and rage taps near the bottom of the screen, no error code",
+         "measured": m["P5"]},
+        {"id": "P6_web_mobile_bank_redirect", "kind": "problem", "screen": P6_SCREEN, "scope": "segment",
+         "segment": {"device_class": P6_DEVICE}, "expected_class": "unclassified_needs_review or technical_bug_or_ux_friction",
+         "expected_signal": "abandon at the bank-redirect step far above web desktop, mostly silent (no error, no rage), "
+                             "platform=web only; the weak signal sits at the rule table's confidence edge, so the exact "
+                             "class can vary a little by seed (see watchdog.py verify())",
+         "measured": m["P6"]},
+        {"id": "P7_individual_ios_login_autofill", "kind": "problem", "screen": P7_SCREEN, "scope": "segment",
+         "segment": {"persona": P7_PERSONA, "device_class": P7_DEVICE},
+         "expected_class": "technical_bug_or_ux_friction",
+         "expected_signal": "abandon at login_phone far above everyone else, with a phone-format error and some rage taps on Log in",
+         "measured": m["P7"]},
+        {"id": "P8_large_business_android_topup_amount", "kind": "problem", "screen": P8_SCREEN, "scope": "segment",
+         "segment": {"persona": P8_PERSONA, "device_class": P8_DEVICE},
+         "expected_class": "technical_bug_or_ux_friction",
+         "expected_signal": "abandon at topup_amount far above everyone else, with dead and rage taps on Continue, mostly no error code",
+         "measured": m["P8"]},
         {"id": "M1_fraudster_bursts", "kind": "problem", "screen": "any", "scope": "segment", "segment": {"persona": "fraudster"},
          "expected_class": "unclassified_needs_review",
          "expected_signal": "failed attempts in bursts at odd hours, up to 5 users per device",

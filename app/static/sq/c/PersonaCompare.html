@@ -1,0 +1,63 @@
+<style>
+  .pc-grid { align-items: stretch; }
+  .pc-overview-grid { grid-template-rows: repeat(5, auto); }
+  .pc-overview-card { display: grid; grid-template-rows: subgrid; grid-row: span 5; min-width: 0; box-sizing: border-box; }
+  .pc-overview-context { align-self: end; }
+  .pc-recommendation-grid { grid-template-rows: repeat(4, auto); }
+  .pc-recommendation { display: grid; grid-template-rows: subgrid; grid-row: span 4; min-width: 0; box-sizing: border-box; }
+  .pc-audience-grid { grid-template-rows: repeat(6, auto); }
+  .pc-audience-card { display: grid; grid-template-rows: subgrid; grid-row: span 6; min-width: 0; box-sizing: border-box; }
+  .pc-audience-metric { min-height: 42px; box-sizing: border-box; align-items: center; }
+</style>
+<template data-sc="if" value="{{visible}}">
+  <section class="card" aria-labelledby="persona-compare-title" style="padding: 24px; display: flex; flex-direction: column; gap: 16px">
+    <template data-sc="if" value="{{prompt}}">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+        <div><h2 id="persona-compare-title" class="h2" style="margin: 0">{{title}}</h2><p class="cap" style="margin: 4px 0 0">{{promptText}}</p></div>
+        <button type="button" class="btn btn-filled" onclick="{{toggle}}">Comparison mode</button>
+      </div>
+    </template>
+    <template data-sc="if" value="{{active}}">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+        <div><h2 id="persona-compare-title" class="h2" style="margin: 0">{{title}}</h2><p class="cap" style="margin: 4px 0 0">{{activeText}}</p></div>
+        <template data-sc="if" value="{{showToggle}}"><button type="button" class="btn btn-outlined" onclick="{{toggle}}">Exit comparison mode</button></template>
+      </div>
+      <template data-sc="if" value="{{overviewMode}}">
+      <div class="pc-grid pc-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px">
+        <template data-sc="for" list="{{rows}}" as="r">
+          <article class="pc-overview-card" style="padding: 16px; border: 1px solid #DADCE0; border-radius: 12px; gap: 9px">
+            <div class="lbl">{{r.label}}</div><div class="num" style="font-size: 26px; font-weight: 500">{{r.overviewValue}}</div>
+            <div style="height: 7px; border-radius: 5px; background: #E8EAED; overflow: hidden"><div style="height: 100%; width: {{r.overviewFill}}%; background: #5E9BE8; border-radius: 5px"></div></div>
+            <div class="cap pc-overview-gap">{{r.overviewGap}}</div><div class="cap pc-overview-context" style="border-top: 1px solid #F1F3F4; padding-top: 8px">{{r.overviewContext}}</div>
+          </article>
+        </template>
+      </div>
+      <p class="cap" style="margin: 0">Group summary; see Recommendations for finding evidence and next steps.</p>
+      </template>
+      <template data-sc="if" value="{{briefMode}}">
+      <div class="pc-grid pc-recommendation-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px">
+        <template data-sc="for" list="{{rows}}" as="r">
+          <article class="pc-recommendation" style="padding: 18px; border: 1px solid #DADCE0; border-radius: 12px; gap: 12px">
+            <h3 class="pc-recommendation-title" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 500">{{r.label}}</h3>
+            <div class="pc-recommendation-priority" style="padding: 12px 14px; border-radius: 10px; background: #F8F9FA"><div class="lbl">Top priority</div><div style="font-weight: 500; margin-top: 4px">{{r.headline}}</div><p class="cap" style="margin: 5px 0 0">{{r.detail}}</p><template data-sc="if" value="{{r.unavailable}}"><span class="chip" style="display: inline-block; margin-top: 8px; background: #FEF7E0; color: #B06000">No data for selected platform</span></template></div>
+            <div class="pc-recommendation-next"><div class="lbl">Do this next</div><p style="margin: 5px 0 0; line-height: 1.5">{{r.nextAction}}</p></div>
+            <div class="pc-recommendation-metrics" style="display: flex; flex-direction: column; gap: 7px; border-top: 1px solid #F1F3F4; padding-top: 10px"><template data-sc="for" list="{{r.metrics}}" as="m"><div style="display: flex; justify-content: space-between; gap: 8px"><span class="cap">{{m.label}}</span><span class="num" style="font-weight: 500; text-align: right">{{m.value}}</span></div></template></div>
+          </article>
+        </template>
+      </div>
+      </template>
+      <template data-sc="if" value="{{audienceMode}}">
+      <div class="pc-grid pc-audience-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px">
+        <template data-sc="for" list="{{rows}}" as="r">
+          <article class="pc-audience-card" style="padding: 18px; border: 1px solid #DADCE0; border-radius: 12px; gap: 12px">
+            <h3 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 500">{{r.label}}</h3>
+            <template data-sc="for" list="{{r.metrics}}" as="m"><div class="pc-audience-metric" style="display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid #F1F3F4; padding-bottom: 8px"><span class="cap">{{m.label}}</span><span class="num" style="font-weight: 500; text-align: right">{{m.value}}</span></div></template>
+            <div><div class="lbl">Leading finding</div><div style="font-weight: 500; margin-top: 4px">{{r.headline}}</div><p class="cap" style="margin: 4px 0 0">{{r.detail}}</p><template data-sc="if" value="{{r.unavailable}}"><span class="chip" style="display: inline-block; margin-top: 8px; background: #FEF7E0; color: #B06000">No data for selected platform</span></template></div>
+          </article>
+        </template>
+      </div>
+      <p class="cap" style="margin: 0">Synthetic sample · audience counts by group</p>
+      </template>
+    </template>
+  </section>
+</template>

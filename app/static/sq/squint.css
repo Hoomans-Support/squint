@@ -1,0 +1,103 @@
+/* Squint overrides on top of the ported prototype styles (proto.css). */
+html, body { background: #F8F9FA; }
+body { font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; }
+
+/* AI badges use the same reusable two-part sparkle shape as the inline SVG marks below. */
+:root { --sq-sparkle-shape: url("sparkle.svg"); }
+.tag-ai { position: relative; font-size: 0 !important; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0 !important; vertical-align: middle; color: #1A73E8; }
+.tag-ai::before { content: ""; display: block; width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--sq-sparkle-shape) center / contain no-repeat; mask: var(--sq-sparkle-shape) center / contain no-repeat; transform-origin: center; transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+.tag-ai::after { content: none; }
+.ds-context { position: relative; display: inline-flex; flex: 0 0 auto; }
+.ds-context > summary { list-style: none; width: 20px; height: 20px; box-sizing: border-box; border: 1px solid #DADCE0; border-radius: 50%; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.ds-context > summary::-webkit-details-marker { display: none; }
+.ds-context > [role="note"] { position: absolute; top: 26px; left: 0; z-index: 30; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; border: 1px solid #DADCE0; border-radius: 8px; background: #FFFFFF; color: #3C4043; font-size: 13px; line-height: 20px; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); }
+/* a closed <details>'s content can still contribute to the page's scroll width in Chromium (its native collapse does not reliably zero out horizontal layout for fixed-width descendants); force it out of layout explicitly on every details variant instead of relying on native collapse */
+details:not([open]) > :not(summary) { display: none !important; }
+.ds-tables > summary { cursor: pointer; color: #1967D2; font-weight: 500; }
+.sq-back-arc-red { animation: sq-back-pulse 1.8s ease-in-out infinite; }
+@keyframes sq-back-pulse { 0%, 100% { opacity: .68; filter: drop-shadow(0 0 0 rgba(217,48,37,0)); } 50% { opacity: 1; filter: drop-shadow(0 0 5px rgba(217,48,37,.45)); } }
+@media (prefers-reduced-motion: reduce) { .sq-back-arc-red { animation: none; } }
+
+/* Components use literal inline colours, so this creates the dark surface at the page level. A partial inversion
+   preserves a charcoal hierarchy and calmer status colours; move to shared colour tokens when the prototype stops
+   using inline values. */
+html[data-theme="dark"] { filter: invert(.90) hue-rotate(180deg) saturate(.82); background: #202124; }
+
+/* Chart/graph grow-in motion, app-wide. Scoped to graphs and charts only (owner's call), not general card
+   entrance. Replays whenever the element (re)renders, including on a scope change: this lightweight component
+   framework doesn't track "first mount" separately from "re-render", so an exact once-per-view rule (like the old
+   UI had) would need deeper framework changes. A replay on every scope change still reads as a smooth chart
+   transition rather than an instant jump, which is the actual complaint this fixes. */
+@keyframes sq-grow-x { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes sq-grow-y { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+/* Starts hidden and only plays once the IntersectionObserver in data.js marks it `.in-view` (the element has
+   scrolled into the viewport), not immediately on render. The resting (not yet in-view) state hides with
+   `opacity` only, never `transform: scale(0)`: a scaled-to-zero element has a zero-area box, and
+   IntersectionObserver computes intersection from that painted box, so it can never detect the element entering
+   the viewport once already collapsed — the chart would stay invisible forever. `forwards` keeps the grown,
+   full-opacity state once the animation ends. */
+.sq-grow-x, .track > *, .sqa-track > * { opacity: 0; transform-origin: left; }
+.sq-grow-y { opacity: 0; transform-origin: bottom; }
+.sq-grow-x.in-view, .track > *.in-view, .sqa-track > *.in-view { animation: sq-grow-x .6s cubic-bezier(.2,.8,.2,1) forwards; }
+.sq-grow-y.in-view { animation: sq-grow-y .6s cubic-bezier(.2,.8,.2,1) forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .sq-grow-x, .sq-grow-y, .track > *, .sqa-track > * { opacity: 1; animation: none; }
+}
+
+/* Keep formatted currency pairs such as PHP and USD together during count-up updates. */
+.sq-count { white-space: nowrap; }
+/* ...except on the narrowest phones, where a long PHP+USD pair can run past the KPI tile; wrapping there beats a hidden horizontal scroll. */
+@media (max-width: 360px) { .sq-count { white-space: normal; overflow-wrap: break-word; } }
+
+/* Keep the selected platform state distinct from the neutral hover highlight. */
+.scope-platform-option:not(:disabled):not([aria-checked="true"]):hover { background: #F1F3F4 !important; }
+.scope-platform-option:focus-visible { outline: 2px solid #1A73E8; outline-offset: -2px; }
+
+/* The sparkle icon marks "Ask"/AI entry points everywhere it appears (top bar, nav, Ask page, finding cards,
+   suggestion chips). A small hover/focus flourish makes it read as interactive and ties those spots together
+   visually. */
+.sq-sparkle { display: inline-flex; flex: 0 0 20px; width: 20px !important; height: 20px !important; color: #1A73E8; stroke: currentColor; stroke-width: 1.75px; transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+a:hover .sq-sparkle, button:hover .sq-sparkle, .sq-sparkle:hover,
+a:focus-visible .sq-sparkle, button:focus-visible .sq-sparkle, .sq-sparkle:focus-visible,
+.tag-ai:hover::before, .tag-ai:focus-visible::before { transform: scale(1.18) rotate(12deg); }
+@media (prefers-reduced-motion: reduce) {
+  a:hover .sq-sparkle, button:hover .sq-sparkle, .sq-sparkle:hover,
+  a:focus-visible .sq-sparkle, button:focus-visible .sq-sparkle, .sq-sparkle:focus-visible,
+  .tag-ai:hover::before, .tag-ai:focus-visible::before { transform: none; transition: none; }
+}
+
+
+/* Give the settings popover a compact, clearly grouped control hierarchy. */
+.sq-workspace-menu { position: relative; flex: 0 1 auto; }
+.sq-workspace-trigger { display: inline-flex; align-items: center; gap: 8px; max-width: 240px; height: 38px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #3C4043; font: inherit; cursor: pointer; }
+.sq-workspace-trigger:hover, .sq-workspace-trigger[aria-expanded="true"] { border-color: #DADCE0; background: #FFFFFF; }
+.sq-workspace-trigger-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
+.sq-workspace-popover { position: absolute; top: 44px; left: 0; z-index: 30; width: 300px; max-width: min(300px, calc(100vw - 24px)); box-sizing: border-box; padding: 8px; border: 1px solid #DADCE0; border-radius: 12px; background: #FFFFFF; color: #3C4043; box-shadow: 0 4px 16px rgba(60,64,67,.2); }
+.sq-workspace-title { padding: 10px 12px 8px; color: #80868B; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.sq-workspace-option, .sq-workspace-create { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: #3C4043; font: inherit; text-align: left; cursor: pointer; }
+.sq-workspace-option:hover, .sq-workspace-create:hover { background: #F1F3F4; }
+.sq-workspace-option > span, .sq-workspace-create > span { flex: 1; }
+.sq-workspace-option[aria-pressed="true"] { color: #174EA6; background: #E8F0FE; }
+.sq-workspace-check { margin-left: auto; }
+.sq-workspace-note { margin: 8px 4px; padding: 10px 12px; border-radius: 8px; background: #F8F9FA; color: #5F6368; font-size: 11px; line-height: 1.5; }
+.sq-workspace-note b { color: #3C4043; }
+.sq-workspace-create { border-top: 1px solid #E8EAED; border-radius: 0 0 8px 8px; color: #1967D2; font-weight: 500; }
+.sq-workspace-create > svg:last-child { color: #5F6368; }
+.sq-owner-pill { display: inline-flex; flex: 0 0 auto; align-items: center; padding: 4px 10px; border-radius: 999px; background: #F1F3F4; color: #3C4043; font-size: 11px; font-weight: 600; line-height: 16px; white-space: nowrap; }
+.sq-settings-popover { line-height: 1.4; }
+.sq-settings-heading { display: flex; flex-direction: column; gap: 2px; padding-bottom: 12px; border-bottom: 1px solid #E8EAED; }
+.sq-settings-heading strong { color: #202124; font-size: 15px; font-weight: 600; }
+.sq-settings-heading span, .sq-settings-help { color: #80868B; font-size: 11px; }
+.sq-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.sq-settings-label { color: #3C4043; font-size: 12px; font-weight: 600; letter-spacing: .01em; }
+.sq-settings-help { margin-top: 2px; }
+.sq-settings-section { padding-top: 12px; border-top: 1px solid #F1F3F4; }
+.sq-settings-section:nth-child(2) { padding-top: 0; border-top: 0; }
+.sq-settings-toggle { position: relative; display: inline-flex; flex: 0 0 36px; width: 36px; height: 20px; cursor: pointer; }
+.sq-settings-toggle input { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.sq-settings-toggle-track { position: absolute; inset: 0; border-radius: 10px; transition: background .15s ease; }
+.sq-settings-toggle-knob { position: absolute; top: 2px; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 2px rgba(60,64,67,.4); transition: left .15s ease; }
+.sq-settings-toggle input:focus-visible + .sq-settings-toggle-track { outline: 2px solid #1A73E8; outline-offset: 2px; }
+.sq-settings-alert-control { display: inline-flex; align-items: center; gap: 7px; }
+.sq-settings-alert-count { min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: #D93025; color: #FFFFFF; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 480px) { .sq-settings-popover { right: -48px !important; width: min(292px, calc(100vw - 24px)) !important; } }
