@@ -21,19 +21,11 @@ class Component extends DCLogic {
     const collapsed = !!SQ.settings.navCollapsed;
     const toggleCollapse = () => { SQ.setSetting('navCollapsed', !collapsed); SQ.refocus('nav-toggle'); };
 
-    // ---- section groups: collapsible, state remembered per visitor ----
-    const sections = SQ.settings.navSections || {};
-    const sectionOpen = (id) => sections[id] !== false;
-    const toggleSection = (id) => () => { SQ.setSetting('navSections', { ...sections, [id]: !sectionOpen(id) }); SQ.refocus('sec-' + id); };
-    const chevron = (open) => 'transform: rotate(' + (open ? '0' : '-90') + 'deg); transition: transform .15s ease';
-
     return {
       s, cur, dot, hasBadge, badge, badgeLabel,
       collapsed, notCollapsed: !collapsed, collapsedStr: String(collapsed),
       toggleCollapse, toggleLabel: collapsed ? 'Expand navigation' : 'Collapse navigation',
-      toggleChevronStyle: 'transform: rotate(' + (collapsed ? '180' : '0') + 'deg); transition: transform .15s ease',
-      exploreOpen: sectionOpen('explore'), exploreStr: String(sectionOpen('explore')), toggleExplore: toggleSection('explore'), exploreChevron: chevron(sectionOpen('explore')),
-      insightsOpen: sectionOpen('insights'), insightsStr: String(sectionOpen('insights')), toggleInsights: toggleSection('insights'), insightsChevron: chevron(sectionOpen('insights'))
+      toggleChevronStyle: 'transform: rotate(' + (collapsed ? '180' : '0') + 'deg); transition: transform .15s ease'
     };
   }
 }
