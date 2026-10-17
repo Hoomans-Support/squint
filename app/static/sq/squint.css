@@ -57,6 +57,8 @@ html[data-theme="dark"] { filter: invert(.90) hue-rotate(180deg) saturate(.82); 
    suggestion chips). A small hover/focus flourish makes it read as interactive and ties those spots together
    visually. */
 .sq-sparkle { display: inline-flex; flex: 0 0 20px; width: 20px !important; height: 20px !important; color: #1A73E8; stroke: currentColor; stroke-width: 1.75px; transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+/* same mark, no hover/focus motion: for places the icon shouldn't draw extra attention, like a nav item sitting still all the time. */
+.sq-sparkle-static { display: inline-flex; flex: 0 0 20px; width: 20px !important; height: 20px !important; color: #1A73E8; stroke: currentColor; stroke-width: 1.75px; }
 a:hover .sq-sparkle, button:hover .sq-sparkle, .sq-sparkle:hover,
 a:focus-visible .sq-sparkle, button:focus-visible .sq-sparkle, .sq-sparkle:focus-visible,
 .tag-ai:hover::before, .tag-ai:focus-visible::before { transform: scale(1.18) rotate(12deg); }
