@@ -19,7 +19,9 @@
       label: s.label, people: n(s.people), width: (s.share * 100).toFixed(2) + '%',
       color: ['#1A73E8', '#F9AB00', '#1E8E3E'][i] || '#5F6368'
     }));
-    const cards = A.cards.map((c) => {
+    // the featured "Top audience to act on" card is drawn from the same win-back pick as one of A.cards;
+    // drop that duplicate from the grid below so every card there is a distinct audience.
+    const cards = A.cards.filter((c) => !top.insight_id || c.insight_id !== top.insight_id).map((c) => {
       const [verb, bg, fg] = palette[c.kind] || ['Audience', '#F1F3F4', '#3C4043'];
       return {
         kind: c.kind, verb, bg, fg, title: c.title, basis: c.basis, action: c.action,
@@ -33,15 +35,21 @@
       kind, verb: palette[kind][0], cards: cards.filter((card) => card.kind === kind)
     })).filter((group) => group.cards.length > 0);
     const rv = A.signals.return_visits;
-    const groupRows = rv.d1.by_group.map((g) => ({
+    // once the scope is already narrowed to one named persona, every other group has 0 people here
+    // by construction (this block only holds that persona's own sessions) — drop empty rows instead
+    // of a wall of "Not enough history" placeholders for groups that aren't in view at all.
+    const groupRows = rv.d1.by_group.filter((g) => g.people > 0).map((g) => ({
       name: g.label, people: n(g.people), value: pct(g.rate),
       width: Math.max(0, Math.min(100, (g.rate || 0) * 100)).toFixed(1) + '%'
     })).sort((a, b) => parseFloat(b.value) - parseFloat(a.value));
     const r14 = A.signals.repeat_purchases.last_14_days;
     const repeat = r14.buckets.map((b) => ({ label: b.label, people: n(b.people), share: pct(b.share), width: (b.share || 0) * 100 + '%' }));
-    const segments = A.segments.items.map((s, i) => ({
+    const segColor = { straight_through: '#1E8E3E', high_value_topup: '#1A73E8', stalled_otp: '#F9AB00', load_first: '#5F6368', shared_device: '#8AB4F8', not_grouped: '#DADCE0' };
+    // a segment with nobody in it in this scope is not an audience to show; a "0%" legend entry
+    // reads as broken, not as "none" - drop it instead of printing a figure with nothing behind it.
+    const segments = A.segments.items.filter((s) => s.people > 0).map((s) => ({
       label: s.label, people: n(s.people), share: s.pct + '%', width: (s.share || 0) * 100 + '%',
-      color: ['#1E8E3E', '#1A73E8', '#F9AB00', '#5F6368', '#8AB4F8', '#DADCE0'][i % 6]
+      color: segColor[s.id] || '#5F6368'
     }));
     const d = (days, key, i) => ({ days, label: days + ' days', rate: pct(rv[key].rate), height: rv[key].rate == null ? '0px' : (rv[key].rate * 96).toFixed(1) + 'px', color: ['#8AB4F8', '#669DF6', '#1A73E8'][i] });
     return {

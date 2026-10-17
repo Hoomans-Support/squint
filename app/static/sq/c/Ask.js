@@ -14,7 +14,7 @@ class Component extends DCLogic {
       A.historyMenu = false;
       SQ.redraw();
     };
-    const toggleHistoryMenu = () => { A.historyMenu = !A.historyMenu; SQ.redraw(); };
+    const toggleHistoryMenu = () => { A.historyMenu = !A.historyMenu; A.menu = false; SQ.redraw(); };
     const clearHistory = () => { A.clearAll(); };
     const entries = A.entries();
     const hasThread = !!th;
@@ -96,7 +96,7 @@ class Component extends DCLogic {
       canExport: answered > 0,
       banner: th ? ('Answered ' + dateText + ' from data up to ' + SQ.asOf() + '. This is the newest data in the sample, so there is nothing to re-run.') : '',
       menu: A.menu, menuStr: A.menu ? 'true' : 'false',
-      toggleMenu: () => { A.menu = !A.menu; SQ.redraw(); },
+      toggleMenu: () => { A.menu = !A.menu; A.historyMenu = false; SQ.redraw(); },
       infoTagsOpen: !!A.infoTags, infoTagsStr: A.infoTags ? 'true' : 'false',
       toggleInfoTags: () => { A.infoTags = !A.infoTags; SQ.redraw(); },
       pin: () => th && A.togglePin(th), pinLabel: th && th.pinned ? 'Unpin' : 'Pin',
