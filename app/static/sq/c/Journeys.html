@@ -268,7 +268,25 @@
                   </template>
                 </div>
               </template>
+              <template data-sc="if" value="{{hero.ticket.hasRuledOut}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 8px; background: #F8F9FA">
+                  <span class="lbl">{{hero.ticket.ruledOutLabel}}</span>
+                  <template data-sc="for" list="{{hero.ticket.ruledOut}}" as="c" hint-placeholder-count="2"><span style="color: #3C4043"><span style="font-weight: 500">{{c.title}}:</span> {{c.why}}</span></template>
+                </div>
+              </template>
+              <template data-sc="if" value="{{hero.ticket.hasNext}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <span class="lbl">What to do</span>
+                  <template data-sc="for" list="{{hero.ticket.next}}" as="n" hint-placeholder-count="2"><span style="color: #3C4043"><span class="tag" style="margin-right: 6px">{{n.kind}}</span>{{n.text}}</span></template>
+                </div>
+              </template>
               <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px solid #F1F3F4">
+                <template data-sc="if" value="{{hero.ticket.hasMarkFixed}}" hint-placeholder-val="{{ true }}">
+                <button type="button" class="btn btn-outlined" onClick="{{hero.ticket.markFixed}}">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+                  Mark fixed
+                </button>
+                </template>
                 <button type="button" class="btn btn-tonal" onClick="{{hero.ticket.copy}}">Copy</button>
                 <button type="button" class="btn btn-outlined" onClick="{{hero.ticket.download}}">Download .md</button>
                 <button type="button" class="btn btn-filled" style="background: #1E8E3E" onClick="{{hero.ticket.close}}">

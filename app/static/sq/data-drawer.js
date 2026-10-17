@@ -205,7 +205,12 @@
       reasonTag: r.whyTag, reasonCls: r.whyTagCls, reasonWhy: r.why,
       hasEvidenceLines: evidenceLines.length > 0, evidenceLines,
       hasSessions: sessions.length > 0, sessions,
-      ticket: m.ticket, ticketFile: SQ.ticketFile(i)
+      // only shown by hosts that opt in (Journeys' "Let's figure it out"), not Overview's plain ticket
+      ruledOutLabel: r.whyTag === 'AI' ? 'Ruled out by the AI' : 'Ruled out',
+      hasRuledOut: m.ruledOut.length > 0, ruledOut: m.ruledOut,
+      hasNext: m.next.length > 0, next: m.next,
+      ticket: m.ticket, ticketFile: SQ.ticketFile(i),
+      hasMarkFixed: !m.healthy, markFixed: () => SQ.markFixed(i.id)
     };
   };
 

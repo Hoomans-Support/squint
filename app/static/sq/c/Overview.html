@@ -76,7 +76,7 @@
                 </button>
                 </template>
                 <a class="btn btn-filled" data-fk="top-journeys" href="#Journeys" onclick="{{top.journeys}}">Open in Journeys</a>
-                <a class="ibtn" aria-label="Let's figure it out" title="Let's figure it out" href="#ChatNow" onclick="{{top.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
+                <a class="ibtn" aria-label="Chat now" href="#ChatNow" onclick="{{top.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
               </div>
             </div>
             <template data-sc="if" value="{{top.ticket.ticketOpen}}" hint-placeholder-val="{{ false }}">
@@ -110,6 +110,12 @@
                 <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px solid #F1F3F4">
                   <button type="button" class="btn btn-tonal" onClick="{{top.ticket.copy}}">Copy</button>
                   <button type="button" class="btn btn-outlined" onClick="{{top.ticket.download}}">Download .md</button>
+                  <template data-sc="if" value="{{top.ticket.hasMarkFixed}}" hint-placeholder-val="{{ true }}">
+                  <button type="button" class="btn btn-outlined" onClick="{{top.ticket.markFixed}}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+                    Mark fixed
+                  </button>
+                  </template>
                   <button type="button" class="btn btn-filled" style="background: #1E8E3E" onClick="{{top.ticket.toggleTicket}}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
                     Ticket created
@@ -196,7 +202,7 @@
                           </button>
                           </template>
                           <a class="btn btn-filled" data-fk="row-journeys-{{p.id}}" href="#Journeys" onclick="{{p.journeys}}">Open in Journeys</a>
-                          <a class="ibtn" aria-label="Let's figure it out" title="Let's figure it out" href="#ChatNow" onclick="{{p.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
+                          <a class="ibtn" aria-label="Chat now" href="#ChatNow" onclick="{{p.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
                         </span>
                       </div>
                       <template data-sc="if" value="{{p.ticket.ticketOpen}}" hint-placeholder-val="{{ false }}">
@@ -230,6 +236,12 @@
                           <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px solid #F1F3F4">
                             <button type="button" class="btn btn-tonal" onClick="{{p.ticket.copy}}">Copy</button>
                             <button type="button" class="btn btn-outlined" onClick="{{p.ticket.download}}">Download .md</button>
+                            <template data-sc="if" value="{{p.ticket.hasMarkFixed}}" hint-placeholder-val="{{ true }}">
+                            <button type="button" class="btn btn-outlined" onClick="{{p.ticket.markFixed}}">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+                              Mark fixed
+                            </button>
+                            </template>
                             <button type="button" class="btn btn-filled" style="background: #1E8E3E" onClick="{{p.ticket.toggleTicket}}">
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
                               Ticket created

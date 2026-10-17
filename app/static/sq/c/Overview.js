@@ -28,6 +28,7 @@ class Component extends DCLogic {
           if (!ok) done(false);
         },
         download: () => this.setState({ copied: SQ.downloadText(c.ticketFile, c.ticket) ? 'Downloaded ' + c.ticketFile : 'The download is blocked here.' }),
+        markFixed: () => { c.markFixed(); this.setState({ ticketOpenId: null, copied: '' }); },
         copied: this.state.copied || '', hasCopied: !!this.state.copied
       };
     };

@@ -85,7 +85,7 @@ class Component extends DCLogic {
       whyLowConf: I.whyTag === 'AI · low confidence',
       hasWho: (I.whoVals || []).length > 0 && I.whoTick != null, whoMeasure: I.whoMeasure, whoTick: I.whoTick != null ? I.whoTick.toFixed(1) + '%' : '',
       tickPos: I.whoTick != null ? Math.min(100, I.whoTick / I.whoMax * 100).toFixed(1) + '%' : '0%', whoRows,
-      primary: I.primary, primaryIsDraft: I.route === 'ProblemDetail',
+      primary: I.route === 'ProblemDetail' ? "Let's figure it out" : I.primary, primaryIsDraft: I.route === 'ProblemDetail',
       // Draft ticket shows inline under this button (no drawer, no route change); any other route navigates as before
       ticketOpen: heroTicketOpen, ticketClosed: !heroTicketOpen,
       openPrimary: () => {
@@ -108,6 +108,7 @@ class Component extends DCLogic {
           },
           download: () => this.setState({ copied: SQ.downloadText(c.ticketFile, c.ticket) ? 'Downloaded ' + c.ticketFile : 'The download is blocked here.' }),
           close: () => { this.setState({ heroTicketFor: null, copied: '' }); SQ.refocus('hero-draft'); },
+          markFixed: () => { c.markFixed(); this.setState({ heroTicketFor: null, copied: '' }); },
           copied: this.state.copied || ''
         }
       });

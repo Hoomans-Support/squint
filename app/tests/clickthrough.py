@@ -261,16 +261,18 @@ def main():
             disclosures.first.locator("summary").click()
             check("product-completion disclosure expands", disclosures.first.get_attribute("open") is not None)
         else: check("product-completion disclosure expands", False, "disclosure missing")
-        draft_ticket = page.get_by_role("button", name=re.compile("Draft ticket"))
+        draft_ticket = page.get_by_role("button", name="Let's figure it out")
         if draft_ticket.count():
             before_hash = page.evaluate("location.hash")
             draft_ticket.first.click(); pause(page)
-            check("Draft ticket shows the ticket inline on Journeys, no drawer, no route change",
-                  page.locator('[role="region"][aria-label="Ticket draft"]').is_visible()
+            ticket_region = page.locator('[role="region"][aria-label="Ticket draft"]')
+            check("Let's figure it out shows the ticket inline on Journeys, no drawer, no route change",
+                  ticket_region.is_visible()
                   and not page.evaluate("!!SQ.state.ticketModalOpen")
                   and page.evaluate("location.hash") == before_hash)
+            check("the Journeys ticket also shows Mark fixed", page.get_by_role("button", name="Mark fixed").count() >= 1)
             page.get_by_role("button", name="Ticket created").click(); pause(page)
-        else: check("Draft ticket shows the ticket inline on Journeys", False, "CTA missing")
+        else: check("Let's figure it out shows the ticket inline on Journeys", False, "CTA missing")
         route(page, "Journeys")
         top_menu = page.get_by_role("button", name="Biggest leak actions")
         if top_menu.count():
