@@ -22,11 +22,21 @@
             <p style="margin: 4px 0 0; color: #5F6368"><span style="font-weight: 500; color: #202124">What do we tell the team this week?</span> One page: the takeaway, three numbers, what to do.</p>
           </div>
           <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <template data-sc="if" value="{{b.showRewrite}}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="btn btn-outlined" onClick="{{doRewrite}}" disabled="{{b.rewriting}}">{{rewriteLabel}}</button>
+            </template>
+            <template data-sc="if" value="{{b.aiRewritten}}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="btn btn-outlined" onClick="{{useStandard}}">Standard wording</button>
+            </template>
             <button type="button" class="btn btn-outlined" onClick="{{copyText}}">{{copyLabel}}</button>
             <button type="button" class="btn btn-outlined" onClick="{{printPage}}">Download PDF</button>
             <button type="button" class="btn btn-filled" onClick="{{requestShareAccess}}" aria-label="{{shareLabel}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 1 1 8 0v3"></path></svg>{{shareLabel}}</button>
           </div>
         </div>
+
+        <template data-sc="if" value="{{b.hasAiError}}" hint-placeholder-val="{{ false }}">
+          <div class="sq-noprint cap" style="padding: 10px 16px; border-radius: 8px; background: #FEF7E0; color: #5F6368">{{b.aiError}}</div>
+        </template>
 
         <div class="sq-noprint"><dc-import name="ScopeBar" hint-size="100%,40px"></dc-import></div>
 
@@ -49,6 +59,9 @@
             </div>
             <h2 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">{{b.hA}} <span style="font-weight: 500">{{b.hB}}</span>{{b.hC}}</h2>
             <p style="margin: 0; font-size: 16px; line-height: 24px; color: #5F6368"><template data-sc="if" value="{{b.leadAI}}" hint-placeholder-val="{{ true }}"><span class="tag tag-ai" style="vertical-align: 2px">AI</span> </template>{{b.lead}}</p>
+            <template data-sc="if" value="{{b.aiRewritten}}" hint-placeholder-val="{{ false }}">
+              <p class="cap" style="margin: 0">{{b.aiNotice}}</p>
+            </template>
           </header>
 
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0; border: 1px solid #E8EAED; border-radius: 8px">

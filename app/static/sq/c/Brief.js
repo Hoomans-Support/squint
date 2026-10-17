@@ -2,12 +2,16 @@ SQ.define("Brief", function (DCLogic) {
 class Component extends DCLogic {
   renderVals() {
     const A = SQ.ask;
+    A.ensureBriefAiStatus();
     const b = A.brief();
     b.noTodo = !b.hasTodo; b.noKeep = !b.hasKeep;
     const comparisonActive = SQ.personaIds().length > 1 && !!SQ.state.personaComparisonMode;
     const shareAccessRequested = !!this.state.shareAccessRequested;
     return {
       b,
+      rewriteLabel: b.rewriting ? 'Rewriting…' : (b.aiRewritten ? 'Rewrite again' : 'Rewrite with Gemini'),
+      doRewrite: () => A.rewriteBrief(b.rewriteIds, b.aiRewritten),
+      useStandard: () => A.useStandardBrief(),
       showCombo: b.comboN > 1 && !!b.topWho,
       comparisonMode: comparisonActive ? 'true' : 'false',
       notComparisonMode: !comparisonActive,

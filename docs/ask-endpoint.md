@@ -26,11 +26,9 @@ The deployed `squint` Cloud Run backend behind `squint.web.app` has had `ASK_GEM
 
 `ASK_GEMINI_MOCK=1` answers from canned outputs without network (used by tests; `mock-hallucinate`, `mock-url`, `mock-code`, `mock-long`, `mock-cannot` in the question text each exercise one validator branch). `GET /api/ask/status` returns `{"enabled": true|false}`.
 
-## Not yet wired
+## Wired into the Ask tab (2026-10-17)
 
-The current Ask tab (`app/static/sq/c/Ask.html`, `app/static/sq/data-ask.js`) only matches against the prepared `results.json` `ask[]` entries and shows a fixed refusal ("I can't answer that from this data") when nothing matches — it never calls `/api/ask`, regardless of whether `ASK_GEMINI_ENABLED` happens to be set on the Cloud Run service behind it. This endpoint and its guardrails exist and pass their tests, but the frontend fetch that would call it on an unmatched question has not been written. See `docs/ai-generation-overview.md` for where this and the other two live endpoints (Fact-check, Brief rewrite) stand relative to the current UI, what wiring each one up would take, and the current deploy topology (Firebase Hosting `squint.web.app` → Cloud Run `squint` via `/api/**`).
-
-**Coordination (2026-10-17):** `app/static/sq/c/Ask.html` and `app/static/sq/data-ask.js` are both listed as actively claimed by other sessions on `agent-coordination.md` as of this writing. Claim them there (or confirm a release) before wiring this in, same as any other edit to those files.
+The Ask tab (`app/static/sq/c/Ask.html`, `app/static/sq/data-ask.js`) matches against the prepared `results.json` `ask[]` entries first, same as before; when nothing matches, `data-ask.js` now calls this endpoint while its usual step animation plays, instead of going straight to the fixed refusal. A verified live answer renders through the same `A.model()` path a prepared entry uses (it is stored as a synthetic `ask[]`-shaped entry, keyed `live:<timestamp><random>`, not written back to `results.json`). Any failure — disabled, rate-limited, refused, model error, network error — falls through to exactly the original hardcoded refusal, so with `ASK_GEMINI_ENABLED` unset the visible behavior is unchanged (verified locally). `Ask.html` and `Ask.js` were not touched; the whole change lives in `data-ask.js`. See `docs/ai-generation-overview.md` for the equivalent status of Fact-check (still not wired, no button exists) and Brief rewrite (wired the same day), and the current deploy topology (Firebase Hosting `squint.web.app` → Cloud Run `squint` via `/api/**`) — this backend flag is already on there, so shipping the wiring live needs only a Hosting deploy of the static files, no Cloud Run redeploy.
 
 ## Privacy and logs
 

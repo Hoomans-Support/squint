@@ -1,10 +1,14 @@
-/* Ask, export-as-slides and Weekly brief selectors. Owned by the Ask/Brief lane; reads SQ.data only (results.json), never the network.
-   Ask answers come ONLY from the prepared results.json `ask[]` entries (no live model). Nothing here invents a number:
-   every figure is read from results.json or derived from it by arithmetic shown in the code. */
+/* Ask, export-as-slides and Weekly brief selectors. Owned by the Ask/Brief lane; reads SQ.data only (results.json) for
+   matched questions. An unmatched question also tries the live, guarded /api/ask (off unless ASK_GEMINI_ENABLED=1 on
+   the server; a disabled or failed call falls back to the same refusal as before, so this is additive, not a behavior
+   change when the endpoint is off). Nothing here invents a number: every figure is read from results.json, derived from
+   it by arithmetic shown in the code, or (for a live answer) verified server-side against the same dataset before it
+   reaches this file. See docs/ask-endpoint.md and docs/ai-generation-overview.md. */
 (function () {
   'use strict';
   const SQ = window.SQ;
   const A = (SQ.ask = { draft: '', search: '', curId: null, menu: false, expanded: {}, copied: '', off: { sum: true, app: true }, fmt: 'pdf', notes: true, appendix: false, from: '', fromRoute: '' });
+  const LIVE = Object.create(null);   // id -> synthetic ask[]-shaped entry for an answer that came back from a live /api/ask call
 
   const REFUSAL_HEAD = "I can't answer that from this data";
   const REFUSAL_TEXT = "Squint answers only from the saved results of this sample dataset: findings, rage-tap spots, data health and a few journeys. I won't guess. Try one of these instead.";
@@ -22,7 +26,7 @@
   const focusColor = (sev) => (sev === 'critical' ? RED : sev === 'warning' ? AMBER : BLUE);
   const entries = () => (SQ.data.ask || []).filter((x) => !HIDDEN.test(JSON.stringify(x)));
   A.entries = entries;
-  A.entry = (id) => entries().find((e) => e.id === id) || null;
+  A.entry = (id) => entries().find((e) => e.id === id) || LIVE[id] || null;
   A.entryForInsight = (iid) => entries().find((e) => (e.refs || []).some((r) => r.type === 'insight' && r.id === iid)) || null;
   A.refusal = { head: REFUSAL_HEAD, text: REFUSAL_TEXT };
   const reduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) { return false; } };
@@ -75,11 +79,37 @@
   };
   A.steps = STEPS;
 
+  /* A question with no prepared match tries the live endpoint while the usual step animation plays, so a slow network
+     is not a longer-feeling wait than today's fixed ~1.1s. Whichever finishes last ends the turn: the animation never
+     ends the turn alone (so it cannot show a false refusal while the call is still in flight), and the call never ends
+     it before step 4 (so a very fast cache hit does not skip the steps). Stop aborts the fetch, same as before otherwise. */
+  const settle = (turn) => {
+    if (!live(turn) || !turn.pending || turn.step < 4 || !turn.liveSettled) return;
+    turn.pending = false; save(); SQ.redraw(); A.focus('ask-follow');
+  };
+  function askLive(turn) {
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    turn.abort = ctrl;
+    fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: turn.q }), signal: ctrl ? ctrl.signal : undefined })
+      .then((r) => r.json().then((body) => ({ ok: r.ok, body })).catch(() => ({ ok: false, body: null })))
+      .then(({ ok, body }) => {
+        if (!live(turn)) return;
+        if (ok && body && typeof body.answer === 'string' && body.answer.trim() && !body.refused) {
+          const id = 'live:' + turn.at.toString(36) + Math.random().toString(36).slice(2, 6);
+          LIVE[id] = { id, question: turn.q, answer: body.answer, refs: (body.refs || []).filter((r) => r && r.id && r.label)
+            .map((r) => ({ type: r.type === 'fault' ? 'fault' : 'insight', id: r.id, label: r.label })) };
+          turn.eid = id;
+        }
+        turn.liveSettled = true;
+        settle(turn);
+      })
+      .catch(() => { if (live(turn)) { turn.liveSettled = true; settle(turn); } });
+  }
   A.submit = (q, opts = {}) => {
     q = String(q || '').trim().slice(0, 200);
     if (!q) return;
     const entry = A.match(q);
-    const turn = { q, eid: entry ? entry.id : null, at: Date.now(), pending: true, step: 0, from: opts.from || '' };
+    const turn = { q, eid: entry ? entry.id : null, at: Date.now(), pending: true, step: 0, from: opts.from || '', liveSettled: !!entry };
     let th = opts.fresh ? null : A.cur();
     if (!th) {
       th = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: entry ? entry.question : cap1(q), at: Date.now(), pinned: false, turns: [], from: opts.from || A.fromLabel() };
@@ -92,18 +122,23 @@
     th.at = Date.now();
     A.draft = ''; A.menu = false;
     save();
+    if (!entry) askLive(turn);
     const tick = () => {
       if (!live(turn) || !turn.pending) return;
-      turn.step += 1;
-      if (turn.step >= 4) { turn.pending = false; save(); }
-      SQ.redraw();
-      if (turn.pending) turn.timer = setTimeout(tick, 280);
-      else A.focus('ask-follow');
+      if (turn.step < 4) {
+        turn.step += 1; SQ.redraw();
+        if (turn.step < 4) { turn.timer = setTimeout(tick, 280); return; }
+      }
+      settle(turn);
+      if (!turn.pending) A.focus('ask-follow');
+      // else: step 4 reached before the live call settled; askLive() redraws and focuses when it resolves, no further ticks needed
     };
-    if (reduced()) { turn.pending = false; turn.step = 4; SQ.redraw(); A.focus('ask-follow'); } else { SQ.redraw(); turn.timer = setTimeout(tick, 280); }
+    if (reduced()) { turn.step = 4; SQ.redraw(); settle(turn); if (!turn.pending) A.focus('ask-follow'); }
+    else { SQ.redraw(); turn.timer = setTimeout(tick, 280); }
   };
   A.stop = (th, turn) => {
     turn.stopped = true; turn.pending = false; clearTimeout(turn.timer);
+    if (turn.abort) { try { turn.abort.abort(); } catch (_) { /* already settled */ } }
     th.turns = th.turns.filter((u) => u !== turn);
     A.draft = turn.q;
     if (!th.turns.length) { threads = threads.filter((x) => x !== th); A.curId = null; }
@@ -368,7 +403,34 @@
     } catch (_) { A.copy(text, 'export'); }
   };
 
-  /* ---------- Weekly brief ---------- */
+  /* ---------- Weekly brief: optional "Rewrite with Gemini" wording, off unless the server has BRIEF_AI_ENABLED=1.
+     The three number tiles, finding titles and owners always stay the ones code computed; only the headline, the lead
+     sentence and the per-finding "why" line are swapped for the server's verified rewrite. See docs/brief-ai-endpoint.md. */
+  A.briefAi = { statusChecked: false, status: false, loading: false, error: '', result: null, key: '' };
+  const briefKey = () => SQ.scope.range + '|' + SQ.scope.platform + '|' + SQ.scope.persona;
+  A.ensureBriefAiStatus = () => {
+    if (A.briefAi.statusChecked) return;
+    A.briefAi.statusChecked = true;
+    fetch('/api/brief-ai/status').then((r) => r.json()).then((b) => { A.briefAi.status = !!(b && b.enabled); SQ.redraw(); })
+      .catch(() => { /* leave status false: the button simply does not show */ });
+  };
+  A.rewriteBrief = (ids, again) => {
+    if (A.briefAi.loading || !ids.length) return;
+    const key = briefKey();
+    A.briefAi.loading = true; A.briefAi.error = ''; SQ.redraw();
+    fetch('/api/brief-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ range: SQ.scope.range, platform: SQ.scope.platform, persona: SQ.scope.persona, ids: ids.slice(0, 3), again: !!again }) })
+      .then((r) => r.json().then((body) => ({ ok: r.ok, body })).catch(() => ({ ok: false, body: null })))
+      .then(({ ok, body }) => {
+        A.briefAi.loading = false;
+        if (ok && body && body.source === 'gemini') { A.briefAi.result = body; A.briefAi.key = key; A.briefAi.error = ''; }
+        else { A.briefAi.result = null; A.briefAi.error = (body && body.reason) || 'The AI did not answer. The standard wording stays.'; }
+        SQ.redraw();
+      })
+      .catch(() => { A.briefAi.loading = false; A.briefAi.result = null; A.briefAi.error = 'The AI did not answer. The standard wording stays.'; SQ.redraw(); });
+  };
+  A.useStandardBrief = () => { A.briefAi.result = null; A.briefAi.error = ''; SQ.redraw(); };
+
   A.brief = () => {
     const D = SQ.data, v = SQ.view(), P = SQ.problems(), top = P[0] || null;
     const kpi = (id) => (v.kpis || []).find((k) => k.id === id) || null;
@@ -385,7 +447,7 @@
     const owner = (i) => (i.class === 'ux_friction' ? 'Design' : /technical/.test(i.class) ? 'Engineering' : 'Product');
     const item = (i, n) => {
       const h = A.headline(i), money = i.impact && i.impact.per_week_value > 0 ? ' About ' + SQ.money(i.impact.per_week_value) + ' a week.' : '';
-      return { n, headA: h.a, headB: h.b, headC: h.c, ctx: h.ctx, hasCtx: !!h.ctx, owner: owner(i), why: ((i.facts || [])[0] || firstSentence((i.diagnosis || {}).summary)) + money, text: h.text };
+      return { id: i.id, n, headA: h.a, headB: h.b, headC: h.c, ctx: h.ctx, hasCtx: !!h.ctx, owner: owner(i), why: ((i.facts || [])[0] || firstSentence((i.diagnosis || {}).summary)) + money, text: h.text };
     };
     const todo = P.slice(0, 3).map((i, k) => item(i, k + 1));
     const keep = (v.insight_ids || []).map((id) => SQ.insight(id)).filter((i) => i && i.severity === 'healthy').slice(0, 2).map((i, k) => item(i, k + 1));
@@ -403,6 +465,24 @@
       isCombo, comboN, topWho, topPersonaId, showCombo: isCombo && !!topWho && !!topPersonaId
     };
     out.text = ['# Recommendations', out.kicker, '', th ? th.text : 'Nothing needs attention this week.', lead, '', ...nums.map((n) => n.label + ': ' + n.value + (n.note ? ' (' + n.note + ')' : '')), '', 'What to do this week, and why', ...(todo.length ? todo.map((t) => t.n + '. ' + t.text + ' [' + t.owner + ']\n   ' + t.why) : ['Nothing urgent.']), '', 'What to leave alone', ...(keep.length ? keep.map((t) => '- ' + t.text + '. ' + t.why) : ['- Nothing listed for this scope.']), '', 'Data notes: ' + notes].join('\n');
+
+    /* AI-rewrite overlay: only applied when a verified result exists for this exact view and these exact finding ids
+       (an older result for a different scope or combo selection is never shown). Owners and number tiles are untouched. */
+    const rw = A.briefAi.result;
+    out.rewriteIds = todo.map((t) => t.id);
+    const rwMatch = !!rw && A.briefAi.key === briefKey() && JSON.stringify(rw.ids) === JSON.stringify(out.rewriteIds);
+    if (!rwMatch && rw) { A.briefAi.result = null; }        // scope moved on since the rewrite: drop it rather than show a stale one
+    out.aiRewritten = rwMatch;
+    if (rwMatch) {
+      out.hA = ''; out.hB = rw.headline; out.hC = '';
+      out.lead = rw.sub; out.leadAI = true;
+      out.todo = todo.map((t, i) => (rw.drivers[i] ? { ...t, why: rw.drivers[i] } : t));
+      out.aiNotice = rw.notice;
+    }
+    out.showRewrite = A.briefAi.status && !out.isCombo && out.hasTodo;
+    out.rewriting = A.briefAi.loading;
+    out.hasAiError = !rwMatch && !!A.briefAi.error;
+    out.aiError = A.briefAi.error;
     return out;
   };
   window.addEventListener('resize', () => { if (/^#DeckSlide/.test(location.hash)) SQ.redraw(); });
