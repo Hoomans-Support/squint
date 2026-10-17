@@ -214,7 +214,7 @@
       const val = ins.impact && ins.impact.per_week_dollars > 0 ? SQ.money(ins.impact.per_week_dollars) : null;
       issues.push({
         key: ins.id, kind: 'problem', insightId: ins.id, pid: ins.__p, type: ins.severity === 'critical' ? 'Critical' : 'Warning', chip: (ins.severity === 'critical' ? 'Critical' : 'Warning') + ' · ' + ({ technical_bug: 'Bug', ux_friction: 'UX', language_cognitive_overload: 'Wording', natural_exit: 'Natural exit' }[klass] || 'Needs review'), cause: { technical_bug: 'bug', ux_friction: 'ux', language_cognitive_overload: 'word' }[klass] || null,
-        action: act, item: ins.screen_label || s.name, who: personaId ? SQ.plural(personaId) : 'all users', ctx: ctxText, short: s.name,
+        action: act, item: ins.screen_label || s.name, who: SQ.whoOf(ins), ctx: ctxText, short: s.name,
         step: si, metric: tech ? 'taps' : 'stuck', value: val || 'n/a', hasValue: !!val, unit: val ? ' /wk at risk' : '',
         share: !isSeg && sharePct != null ? PP(sharePct) : '', conf: conf >= 0.8 ? 3 : conf >= 0.5 ? 2 : 1,
         signal: isSeg && drop ? P(drop.value) + ' leave' : (sharePct != null ? PP(sharePct) + ' of exits' : ''),
@@ -234,7 +234,7 @@
         const { s, i } = cands[0];
         const rate = s.left / s.reached;
         issues.push({
-          key: 'watch:' + jid + ':' + s.id, kind: 'watch', type: 'Watch', chip: 'Watch · ' + ({ bug: 'Technical', word: 'Wording', ux: 'UX friction', natural: 'Natural exit' }[s.cause] || 'Exit'), action: 'Investigate', item: s.name, who: 'all users', ctx: '· steepest step in this journey',
+          key: 'watch:' + jid + ':' + s.id, kind: 'watch', type: 'Watch', chip: 'Watch · ' + ({ bug: 'Technical', word: 'Wording', ux: 'UX friction', natural: 'Natural exit' }[s.cause] || 'Exit'), action: 'Investigate', item: s.name, who: SQ.whoOf({}), ctx: '· steepest step in this journey',
           short: s.name, step: i, metric: 'exit', value: 'n/a', unit: '', share: PP(s.left / totalLeft * 100), conf: s.reached >= 200 ? 2 : 1, signal: PP(s.left / totalLeft * 100) + ' of exits', vs: '· ' + PP(rate * 100) + ' leave', vis: 'step', segmentVis: false,
           stats: [['Share of all exits', PP(s.left / totalLeft * 100), s.left + ' of ' + SQ.fmt(totalExits) + ' who left', true], ['Leave here', PP(rate * 100), 'of ' + SQ.fmt(s.reached) + ' who reached it'], ['Stuck over 30s', s.sig ? PP(s.sig[3]) : 'n/a', 'of sessions at this step']],
           whyLabel: 'Why', whyTag: 'Calculated', why: 'No diagnosed problem here yet. This is the step where the most sessions leave, so it is the first place to look.',
