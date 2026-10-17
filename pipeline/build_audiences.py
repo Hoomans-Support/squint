@@ -118,7 +118,7 @@ def win_back(cx: Ctx, ins: dict) -> tuple:
     return row, states
 
 
-def audience_blocks(cx: Ctx) -> tuple:
+def audience_blocks(cx: Ctx, pin_otp: bool = True) -> tuple:
     members_rows = []      # BigQuery audience_members
     active = list(cx.by_user)
     n_active = len(active)
@@ -137,7 +137,9 @@ def audience_blocks(cx: Ctx) -> tuple:
         wb.append(row)
         for k, v in st.items():
             add(row["id"], v, k, "win_back")
-    wb.sort(key=lambda r: (r["screen"] != "otp", r["insight_rank"]))      # the planted OTP outage is the story: first
+    # the planted OTP outage is the flagship story for the unscoped view; a single named persona (or combo)
+    # gets its own top-ranked win-back pick instead, so the four persona views aren't all forced to OTP.
+    wb.sort(key=lambda r: ((r["screen"] != "otp") if pin_otp else False, r["insight_rank"]))
     if wb:
         top = dict(wb[0])
         top["title"] = f"Win back {'sign-in and sign-up' if top['screen'] == 'otp' else 'the finish'} for {top['people']} people who stalled at {top['screen_label']}"
@@ -528,7 +530,7 @@ def build(a: dict) -> dict:
                                if (not i["persona_ids"] or selected is None or bool(selected.intersection(i["persona_ids"])))
                                and (platform == "all" or not i.get("platform_ids") or platform in i["platform_ids"])]
             scoped = dict(a, clean=scoped_clean, all_s=platform_all, insights=scoped_insights)
-            block, _ = audience_blocks(Ctx(scoped))
+            block, _ = audience_blocks(Ctx(scoped), pin_otp=(persona == "all"))
             audience_scopes[f"{platform}|{persona}"] = block
     aud["scopes"] = audience_scopes
     watch, watch_rows = watch_block(cx)

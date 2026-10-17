@@ -124,24 +124,18 @@
         <template data-sc="if" value="{{hasThread}}" hint-placeholder-val="{{ false }}">
           <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
             <h1 style="margin: 0; font-size: 22px; line-height: 30px; font-weight: 400; flex: 1 1 300px">{{title}}</h1>
-            <span style="position: relative">
-              <button type="button" class="ibtn" aria-label="History options" aria-expanded="{{historyMenuStr}}" onClick="{{toggleHistoryMenu}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
-              <template data-sc="if" value="{{historyMenu}}" hint-placeholder-val="{{ false }}">
-                <div role="menu" style="position: absolute; right: 0; top: 44px; z-index: 5; min-width: 180px; padding: 8px 0; background: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 6px 2px rgba(60,64,67,.15), 0 2px 2px rgba(60,64,67,.3); display: flex; flex-direction: column">
-                  <button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer" aria-expanded="{{historyExpanded}}" aria-controls="ask-history" onClick="{{toggleHistory}}">{{historyToggleLabel}}</button>
-                  <template data-sc="if" value="{{hasAnyHistory}}" hint-placeholder-val="{{ false }}"><button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer; color: #C5221F" onClick="{{clearHistory}}">Clear history</button></template>
-                </div>
-              </template>
-            </span>
             <span class="chip" style="background: #F1F3F4; color: #3C4043"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Private</span>
             <template data-sc="if" value="{{canExport}}" hint-placeholder-val="{{ false }}">
               <a class="btn btn-outlined" href="AskFlow5.dc.html" style="height: 36px; padding: 0 16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>Export slides</a>
               <button type="button" class="btn btn-outlined" style="height: 36px; padding: 0 16px" onClick="{{share}}">{{shareLabel}}</button>
             </template>
             <span style="position: relative">
-              <button type="button" class="ibtn" aria-label="More: pin, delete" aria-expanded="{{menuStr}}" onClick="{{toggleMenu}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
+              <button type="button" class="ibtn" aria-label="Conversation options" aria-expanded="{{menuStr}}" onClick="{{toggleMenu}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
               <template data-sc="if" value="{{menu}}" hint-placeholder-val="{{ false }}">
                 <div role="menu" style="position: absolute; right: 0; top: 44px; z-index: 5; min-width: 200px; padding: 8px 0; background: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 6px 2px rgba(60,64,67,.15), 0 2px 2px rgba(60,64,67,.3); display: flex; flex-direction: column">
+                  <button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer" aria-expanded="{{historyExpanded}}" aria-controls="ask-history" onClick="{{toggleHistory}}">{{historyToggleLabel}}</button>
+                  <template data-sc="if" value="{{hasAnyHistory}}" hint-placeholder-val="{{ false }}"><button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer; color: #C5221F" onClick="{{clearHistory}}">Clear history</button></template>
+                  <div style="height: 1px; margin: 4px 0; background: #E8EAED"></div>
                   <button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer" onClick="{{pin}}">{{pinLabel}}</button>
                   <button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer; color: #C5221F" onClick="{{remove}}">Delete this conversation</button>
                 </div>

@@ -69,8 +69,8 @@ a:focus-visible .sq-sparkle, button:focus-visible .sq-sparkle, .sq-sparkle:focus
 
 /* Give the settings popover a compact, clearly grouped control hierarchy. */
 .sq-workspace-menu { position: relative; flex: 0 1 auto; }
-.sq-workspace-trigger { display: inline-flex; align-items: center; gap: 8px; max-width: 240px; height: 38px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #3C4043; font: inherit; cursor: pointer; }
-.sq-workspace-trigger:hover, .sq-workspace-trigger[aria-expanded="true"] { border-color: #DADCE0; background: #FFFFFF; }
+.sq-workspace-trigger { display: inline-flex; align-items: center; gap: 8px; max-width: 240px; height: 38px; padding: 0 10px; border: 1px solid #DADCE0; border-radius: 8px; background: #FFFFFF; color: #3C4043; font: inherit; cursor: pointer; }
+.sq-workspace-trigger:hover, .sq-workspace-trigger[aria-expanded="true"] { border-color: #1A73E8; background: #E8F0FE; color: #174EA6; }
 .sq-workspace-trigger-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
 .sq-workspace-popover { position: absolute; top: 44px; left: 0; z-index: 30; width: 300px; max-width: min(300px, calc(100vw - 24px)); box-sizing: border-box; padding: 8px; border: 1px solid #DADCE0; border-radius: 12px; background: #FFFFFF; color: #3C4043; box-shadow: 0 4px 16px rgba(60,64,67,.2); }
 .sq-workspace-title { padding: 10px 12px 8px; color: #80868B; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
