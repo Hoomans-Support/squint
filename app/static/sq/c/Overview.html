@@ -69,14 +69,55 @@
               <span class="meta" title="{{top.confLabel}} confidence"><span style="display: inline-flex; gap: 2px; align-items: flex-end" aria-hidden="true"><span style="width: 4px; height: 7px; border-radius: 1px; background: {{top.c1}}"></span><span style="width: 4px; height: 11px; border-radius: 1px; background: {{top.c2}}"></span><span style="width: 4px; height: 15px; border-radius: 1px; background: {{top.c3}}"></span></span><span class="sr">{{top.confLabel}} confidence</span></span>
               <span class="meta" title="Spotted {{top.ageLong}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>{{top.ageShort}}<span class="sr">, spotted {{top.ageLong}}</span></span>
               <div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
-                <button type="button" class="btn btn-tonal" data-fk="top-draft" onClick="{{top.draft}}">
+                <template data-sc="if" value="{{top.ticket.ticketClosed}}" hint-placeholder-val="{{ true }}">
+                <button type="button" class="btn btn-tonal" data-fk="top-draft" onClick="{{top.ticket.toggleTicket}}">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M9 6v12" stroke-dasharray="2 2"></path></svg>
                   Draft ticket
                 </button>
+                </template>
                 <a class="btn btn-filled" data-fk="top-journeys" href="#Journeys" onclick="{{top.journeys}}">Open in Journeys</a>
                 <a class="ibtn" aria-label="Let's figure it out" title="Let's figure it out" href="#ChatNow" onclick="{{top.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
               </div>
             </div>
+            <template data-sc="if" value="{{top.ticket.ticketOpen}}" hint-placeholder-val="{{ false }}">
+              <div role="region" aria-label="Ticket draft" style="border: 1px solid #DADCE0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap">
+                  <span class="lbl">New ticket · {{top.ticket.team}}</span>
+                  <span class="chip" style="background: {{top.ticket.sevBg}}; color: {{top.ticket.sevFg}}">{{top.ticket.ticketPriority}}</span>
+                </div>
+                <h3 data-fk="ticket-{{top.id}}" tabindex="-1" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 500; outline: none">{{top.ticket.action}} {{top.ticket.item}} for {{top.ticket.who}}</h3>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px"><span class="lbl">Likely cause</span><span class="{{top.ticket.reasonCls}}">{{top.ticket.reasonTag}}</span></div>
+                  <p style="margin: 4px 0 0; font-size: 14px; line-height: 20px; color: #3C4043">{{top.ticket.reasonWhy}}</p>
+                </div>
+                <template data-sc="if" value="{{top.ticket.hasEvidenceLines}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <div style="display: flex; align-items: center; gap: 8px"><span class="lbl">Evidence</span><span class="tag">Calculated</span></div>
+                    <template data-sc="for" list="{{top.ticket.evidenceLines}}" as="e" hint-placeholder-count="2"><p style="margin: 0; font-size: 13px; color: #3C4043">{{e.text}}</p></template>
+                  </div>
+                </template>
+                <template data-sc="if" value="{{top.ticket.hasSessions}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <span class="lbl">Sessions attached · {{top.ticket.sessions.length}}</span>
+                    <template data-sc="for" list="{{top.ticket.sessions}}" as="s" hint-placeholder-count="3">
+                      <button type="button" onClick="{{s.open}}" style="display: flex; align-items: center; gap: 8px; text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid #E8EAED; background: #FFFFFF; cursor: pointer; font-family: inherit; font-size: 13px; color: #3C4043">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="flex: none; color: #1A73E8"><path d="M8 5.5v13l10.5-6.5z"></path></svg>
+                        {{s.label}}
+                      </button>
+                    </template>
+                  </div>
+                </template>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px solid #F1F3F4">
+                  <button type="button" class="btn btn-tonal" onClick="{{top.ticket.copy}}">Copy</button>
+                  <button type="button" class="btn btn-outlined" onClick="{{top.ticket.download}}">Download .md</button>
+                  <button type="button" class="btn btn-filled" style="background: #1E8E3E" onClick="{{top.ticket.toggleTicket}}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+                    Ticket created
+                  </button>
+                  <span class="cap" role="status" aria-live="polite">{{top.ticket.copied}}</span>
+                </div>
+              </div>
+            </template>
           </template>
 
           <template data-sc="if" value="{{empty}}" hint-placeholder-val="{{ false }}">
@@ -143,17 +184,60 @@
                     </span>
                   </button>
                   <template data-sc="if" value="{{p.open}}" hint-placeholder-val="{{ false }}">
-                    <div style="padding: 0 20px 16px 60px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
-                      <span style="display: inline-flex; align-items: center; gap: 8px"><span class="lbl">Why</span><span class="{{p.whyTagCls}}">{{p.whyTag}}</span>{{p.why}}</span>
-                      <span class="cap num" style="font-size: 13px"><span class="sq-count">{{p.sessions}}</span> sessions · spotted {{p.ageLong}}</span>
-                      <span style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-                        <button type="button" class="btn btn-tonal" data-fk="row-draft-{{p.id}}" onClick="{{p.draft}}">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M9 6v12" stroke-dasharray="2 2"></path></svg>
-                          Draft ticket
-                        </button>
-                        <a class="btn btn-filled" data-fk="row-journeys-{{p.id}}" href="#Journeys" onclick="{{p.journeys}}">Open in Journeys</a>
-                        <a class="ibtn" aria-label="Let's figure it out" title="Let's figure it out" href="#ChatNow" onclick="{{p.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
-                      </span>
+                    <div style="padding: 0 20px 16px 60px; display: flex; flex-direction: column; gap: 12px">
+                      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+                        <span style="display: inline-flex; align-items: center; gap: 8px"><span class="lbl">Why</span><span class="{{p.whyTagCls}}">{{p.whyTag}}</span>{{p.why}}</span>
+                        <span class="cap num" style="font-size: 13px"><span class="sq-count">{{p.sessions}}</span> sessions · spotted {{p.ageLong}}</span>
+                        <span style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                          <template data-sc="if" value="{{p.ticket.ticketClosed}}" hint-placeholder-val="{{ true }}">
+                          <button type="button" class="btn btn-tonal" data-fk="row-draft-{{p.id}}" onClick="{{p.ticket.toggleTicket}}">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M9 6v12" stroke-dasharray="2 2"></path></svg>
+                            Draft ticket
+                          </button>
+                          </template>
+                          <a class="btn btn-filled" data-fk="row-journeys-{{p.id}}" href="#Journeys" onclick="{{p.journeys}}">Open in Journeys</a>
+                          <a class="ibtn" aria-label="Let's figure it out" title="Let's figure it out" href="#ChatNow" onclick="{{p.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
+                        </span>
+                      </div>
+                      <template data-sc="if" value="{{p.ticket.ticketOpen}}" hint-placeholder-val="{{ false }}">
+                        <div role="region" aria-label="Ticket draft" style="border: 1px solid #DADCE0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap">
+                            <span class="lbl">New ticket · {{p.ticket.team}}</span>
+                            <span class="chip" style="background: {{p.ticket.sevBg}}; color: {{p.ticket.sevFg}}">{{p.ticket.ticketPriority}}</span>
+                          </div>
+                          <h3 data-fk="ticket-{{p.id}}" tabindex="-1" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 500; outline: none">{{p.ticket.action}} {{p.ticket.item}} for {{p.ticket.who}}</h3>
+                          <div>
+                            <div style="display: flex; align-items: center; gap: 8px"><span class="lbl">Likely cause</span><span class="{{p.ticket.reasonCls}}">{{p.ticket.reasonTag}}</span></div>
+                            <p style="margin: 4px 0 0; font-size: 14px; line-height: 20px; color: #3C4043">{{p.ticket.reasonWhy}}</p>
+                          </div>
+                          <template data-sc="if" value="{{p.ticket.hasEvidenceLines}}" hint-placeholder-val="{{ true }}">
+                            <div style="display: flex; flex-direction: column; gap: 4px">
+                              <div style="display: flex; align-items: center; gap: 8px"><span class="lbl">Evidence</span><span class="tag">Calculated</span></div>
+                              <template data-sc="for" list="{{p.ticket.evidenceLines}}" as="e" hint-placeholder-count="2"><p style="margin: 0; font-size: 13px; color: #3C4043">{{e.text}}</p></template>
+                            </div>
+                          </template>
+                          <template data-sc="if" value="{{p.ticket.hasSessions}}" hint-placeholder-val="{{ true }}">
+                            <div style="display: flex; flex-direction: column; gap: 6px">
+                              <span class="lbl">Sessions attached · {{p.ticket.sessions.length}}</span>
+                              <template data-sc="for" list="{{p.ticket.sessions}}" as="s" hint-placeholder-count="3">
+                                <button type="button" onClick="{{s.open}}" style="display: flex; align-items: center; gap: 8px; text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid #E8EAED; background: #FFFFFF; cursor: pointer; font-family: inherit; font-size: 13px; color: #3C4043">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="flex: none; color: #1A73E8"><path d="M8 5.5v13l10.5-6.5z"></path></svg>
+                                  {{s.label}}
+                                </button>
+                              </template>
+                            </div>
+                          </template>
+                          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px solid #F1F3F4">
+                            <button type="button" class="btn btn-tonal" onClick="{{p.ticket.copy}}">Copy</button>
+                            <button type="button" class="btn btn-outlined" onClick="{{p.ticket.download}}">Download .md</button>
+                            <button type="button" class="btn btn-filled" style="background: #1E8E3E" onClick="{{p.ticket.toggleTicket}}">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+                              Ticket created
+                            </button>
+                            <span class="cap" role="status" aria-live="polite">{{p.ticket.copied}}</span>
+                          </div>
+                        </div>
+                      </template>
                     </div>
                   </template>
                 </div>
@@ -207,11 +291,4 @@
       </div>
     </main>
   </div>
-  <template data-sc="if" value="{{ticketModalOpen}}" hint-placeholder-val="{{ false }}">
-    <div role="presentation" onClick="{{closeTicketModal}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(32,33,36,.5)">
-      <div onClick="{{stopModal}}" role="dialog" aria-modal="true" class="sq-drawer-in" style="position: absolute; top: 0; right: 0; bottom: 0; width: min(640px, 100vw); overflow: auto; box-sizing: border-box; background: #FFFFFF; box-shadow: -8px 0 24px rgba(60,64,67,.3)">
-        <dc-import name="ProblemDetail" modal="true" hint-size="100%,auto"></dc-import>
-      </div>
-    </div>
-  </template>
 </div>

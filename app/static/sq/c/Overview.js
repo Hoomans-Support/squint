@@ -8,8 +8,29 @@ class Component extends DCLogic {
     const critCount = probs.filter((i) => i.severity === 'critical').length;
     const period = { '24h': ['Today', 'today'], '7d': ['This week', 'this week'], '30d': ['This month', 'this month'] }[sc.range] || ['This week', 'this week'];
 
-    // open ticket draft (a popup over this page, not a route) / open journeys: the target page reads the insight id from SQ.state
-    const draft = (id) => () => SQ.openTicketModal(id);
+    // ticket draft shows inline, right under the button that opened it (no drawer, no route change);
+    // only one open at a time, same as the "other problems" row expand/collapse above it
+    const ticketOpenId = this.state.ticketOpenId || null;
+    const toggleTicket = (id, triggerFk) => () => {
+      const opening = ticketOpenId !== id;
+      this.setState({ ticketOpenId: opening ? id : null, copied: '' });
+      SQ.refocus(opening ? 'ticket-' + id : triggerFk);
+    };
+    const ticketCard = (id, triggerFk) => {
+      const ins = SQ.insight(id);
+      const c = SQ.ticketCardModel(ins);
+      return {
+        ...c, ticketOpen: ticketOpenId === id, ticketClosed: ticketOpenId !== id, toggleTicket: toggleTicket(id, triggerFk),
+        copy: () => {
+          let ok = false;
+          const done = (v) => this.setState({ copied: v ? 'Copied to the clipboard' : 'Copy is blocked here. Select the text and copy it by hand.' });
+          try { navigator.clipboard.writeText(c.ticket).then(() => done(true), () => done(false)); ok = true; } catch (e) { /* fall through */ }
+          if (!ok) done(false);
+        },
+        download: () => this.setState({ copied: SQ.downloadText(c.ticketFile, c.ticket) ? 'Downloaded ' + c.ticketFile : 'The download is blocked here.' }),
+        copied: this.state.copied || '', hasCopied: !!this.state.copied
+      };
+    };
     const journeys = (id) => () => { SQ.state.journeyInsight = id; };
     const askAI = (id) => () => {
       const entry = SQ.ask.entryForInsight(id);
@@ -31,7 +52,7 @@ class Component extends DCLogic {
       evidenceNum: t.statText,
       evidenceCap: t.fact0 || (t.hasBase ? 'baseline ' + t.baseLabel : 'no baseline for this step'),
       peopleTitle: 'Sessions affected, ' + period[1],
-      draft: draft(t.id), journeys: journeys(t.id), askAI: askAI(t.id)
+      ticket: ticketCard(t.id, 'top-draft'), journeys: journeys(t.id), askAI: askAI(t.id)
     };
 
     // ---- KPI row: from view.kpis, deltas vs the previous comparable period ----
@@ -90,7 +111,7 @@ class Component extends DCLogic {
         open, closed: !open, openStr: open ? 'true' : 'false', openBg: open ? 'background: #FAFBFF;' : '',
         fk: 'row-' + p.id,
         toggle: () => { this.setState({ openId: open ? null : p.id }); SQ.refocus('row-' + p.id); },
-        draft: draft(p.id), journeys: journeys(p.id), askAI: askAI(p.id)
+        ticket: ticketCard(p.id, 'row-draft-' + p.id), journeys: journeys(p.id), askAI: askAI(p.id)
       };
     });
 
@@ -150,10 +171,7 @@ class Component extends DCLogic {
       kpis, trust, trendNote, hasTrendNote: !!trendNote,
       showOthers: !!top, hasOthers: nOthers > 0, noOthers: nOthers === 0, rows,
       otherTitle: nOthers === 1 ? 'Other problem' : 'Other problems',
-      exits, checked, hasChecked: checked.length > 0, noChecked: checked.length === 0,
-      ticketModalOpen: !!SQ.state.ticketModalOpen,
-      closeTicketModal: () => SQ.closeTicketModal(),
-      stopModal: (e) => e.stopPropagation()
+      exits, checked, hasChecked: checked.length > 0, noChecked: checked.length === 0
     };
   }
 }

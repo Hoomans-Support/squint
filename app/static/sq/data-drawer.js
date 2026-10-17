@@ -188,6 +188,27 @@
     return m;
   };
 
+  /* The ticket draft content only (no finding-drawer chrome: no nav, no close button, no Owner picker),
+     for inline use on a page's own card (Overview, Journeys) instead of the slide-over drawer. The host
+     component supplies its own copy/download handlers (they need its own setState for the "copied" status). */
+  SQ.ticketCardModel = (i) => {
+    const m = SQ.drawerModel(i);
+    const r = m.rec;
+    const evidenceLines = m.evidence.map((e) => ({ text: e.label + ': ' + e.now + ' vs ' + e.usual + (e.hasRatio ? ' (' + e.ratio + ')' : '') }));
+    const sessions = SQ.sessionSummaries(i, 3).map((s) => ({
+      label: s.label,
+      open: () => { SQ.state.watchInsight = i.id; SQ.state.watchSessionId = s.id; SQ.go('SessionPlayer'); }
+    }));
+    return {
+      team: SQ.ownerOf(i), ticketPriority: (i.__p ? i.__p + ' · ' : '') + r.sev, sevBg: r.sevBg, sevFg: r.sevFg,
+      action: r.action, item: r.item, who: r.who,
+      reasonTag: r.whyTag, reasonCls: r.whyTagCls, reasonWhy: r.why,
+      hasEvidenceLines: evidenceLines.length > 0, evidenceLines,
+      hasSessions: sessions.length > 0, sessions,
+      ticket: m.ticket, ticketFile: SQ.ticketFile(i)
+    };
+  };
+
   SQ.downloadText = (name, text) => {
     try {
       const url = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }));

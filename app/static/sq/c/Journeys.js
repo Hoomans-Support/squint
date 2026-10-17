@@ -68,6 +68,7 @@ class Component extends DCLogic {
     const stepNames = raw.map((r) => r[0]);
     const focus = I.step;
     const focusStep = JD.steps[focus] || JD.steps[0];
+    const heroTicketOpen = I.route === 'ProblemDetail' && this.state.heroTicketFor === I.insightId;
     const hero = {
       n: cur + 1, stripName: I.short,
       rankLabel: (cur === 0 ? 'Biggest leak in this journey' : `${cur + 1} of ${ISSUES.length} in this journey`) + (I.pid ? ' · problem ' + I.pid : (I.key === 'none' ? '' : ' · risk, not yet a problem')),
@@ -85,8 +86,32 @@ class Component extends DCLogic {
       hasWho: (I.whoVals || []).length > 0 && I.whoTick != null, whoMeasure: I.whoMeasure, whoTick: I.whoTick != null ? I.whoTick.toFixed(1) + '%' : '',
       tickPos: I.whoTick != null ? Math.min(100, I.whoTick / I.whoMax * 100).toFixed(1) + '%' : '0%', whoRows,
       primary: I.primary, primaryIsDraft: I.route === 'ProblemDetail',
-      openPrimary: () => { if (I.route === 'ProblemDetail') SQ.openTicketModal(I.insightId); else SQ.go(I.route); }
+      // Draft ticket shows inline under this button (no drawer, no route change); any other route navigates as before
+      ticketOpen: heroTicketOpen, ticketClosed: !heroTicketOpen,
+      openPrimary: () => {
+        if (I.route !== 'ProblemDetail') { SQ.go(I.route); return; }
+        this.setState({ heroTicketFor: heroTicketOpen ? null : I.insightId, copied: '' });
+        SQ.refocus(heroTicketOpen ? 'hero-draft' : 'ticket-hero');
+      }
     };
+    if (heroTicketOpen) {
+      const insIns = SQ.insight(I.insightId);
+      const c = SQ.ticketCardModel(insIns);
+      Object.assign(hero, {
+        ticket: {
+          ...c,
+          copy: () => {
+            let ok = false;
+            const done = (v) => this.setState({ copied: v ? 'Copied to the clipboard' : 'Copy is blocked here. Select the text and copy it by hand.' });
+            try { navigator.clipboard.writeText(c.ticket).then(() => done(true), () => done(false)); ok = true; } catch (e) { /* fall through */ }
+            if (!ok) done(false);
+          },
+          download: () => this.setState({ copied: SQ.downloadText(c.ticketFile, c.ticket) ? 'Downloaded ' + c.ticketFile : 'The download is blocked here.' }),
+          close: () => { this.setState({ heroTicketFor: null, copied: '' }); SQ.refocus('hero-draft'); },
+          copied: this.state.copied || ''
+        }
+      });
+    }
 
     // ---- "Biggest leak in this journey" link: why-trust popup and a quick-action menu, both about ISSUES[0]
     //      specifically (the overall top issue), regardless of which issue is currently selected above ----

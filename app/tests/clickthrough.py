@@ -194,41 +194,28 @@ def main():
         # by SQ.problemRec() (data-main.js), the same helper Overview.js itself renders from.
         check("takeaway is the highest ranked current problem", bool(top) and page.evaluate("p => { const i = SQ.insight(p) && SQ.problemRec(SQ.insight(p)); const t = document.querySelector('#app').innerText; return !!i && t.includes(i.action) && t.includes(i.item); }", top))
         if page.get_by_role("button", name="Draft ticket").count():
-            page.get_by_role("button", name="Draft ticket").first.click(); wait_js(page, "SQ.state.ticketModalOpen === true")
-            check("Draft ticket carries the takeaway insight", page.evaluate("SQ.pickInsight('drawerInsight').id") == top)
-            pause(page)
-            check("opening the ticket popup moves focus to its heading", page.evaluate("document.activeElement.dataset.fk === 'pd-title'"))
-            check("the popup opens on the finding drawer (reason, ruled-out, owner), not straight to the ticket, and stays on this page",
-                  page.locator('[data-fk="pd-ticket"]').is_visible()
-                  and page.locator('[aria-label="Owner"]').is_visible()
-                  and page.evaluate("location.hash") == "#Overview")
-            owner = page.locator('[aria-label="Owner"]')
-            owner.select_option("Engineering"); pause(page)
-            check("the owner dropdown selection sticks", owner.input_value() == "Engineering")
-            page.locator('[data-fk="pd-ticket"]').click(); pause(page)
-            check("clicking Draft ticket in the drawer drafts the actual ticket",
+            page.get_by_role("button", name="Draft ticket").first.click(); pause(page)
+            check("Draft ticket shows the ticket inline, no drawer, no route change, no Draft ticket button left showing",
                   page.locator('[role="region"][aria-label="Ticket draft"]').is_visible()
                   and page.get_by_role("button", name="Copy").is_visible()
-                  and page.get_by_role("button", name=re.compile("Download")).is_visible())
-            check("the drafted ticket shows no Draft ticket or Watch sessions button", page.locator('[data-fk="pd-ticket"]').count() == 0 and page.locator('[data-fk="pd-watch"]').count() == 0)
-            page.get_by_role("button", name="Ticket created").click(); pause(page)
-            check("clicking Ticket created closes the whole popup, not just the drafted view",
-                  page.evaluate("!SQ.state.ticketModalOpen") and page.evaluate("location.hash") == "#Overview")
-            route(page, "Overview")
-            page.get_by_role("button", name="Draft ticket").first.click(); wait_js(page, "SQ.state.ticketModalOpen === true")
-            page.locator('[data-fk="pd-ticket"]').click(); pause(page)
+                  and page.get_by_role("button", name=re.compile("Download")).is_visible()
+                  and page.locator('[data-fk="top-draft"]').count() == 0
+                  and not page.evaluate("!!SQ.state.ticketModalOpen")
+                  and page.evaluate("location.hash") == "#Overview")
+            check("opening the inline ticket moves focus to its heading", page.evaluate("id => document.activeElement.dataset.fk === 'ticket-' + id", top))
             session_row = page.locator('[role="region"][aria-label="Ticket draft"] button').filter(has_text=re.compile(r"\b(AM|PM)\b"))
             if session_row.count():
                 session_row.first.click(); wait_js(page, "location.hash === '#SessionPlayer'")
                 check("a ticket's attached session opens that exact sample in Watch sessions", page.evaluate("!!SQ.pickInsight('watchInsight')"))
                 route(page, "Overview")
-                page.get_by_role("button", name="Draft ticket").first.click(); wait_js(page, "SQ.state.ticketModalOpen === true")
-                page.locator('[data-fk="pd-ticket"]').click(); pause(page)
+                page.get_by_role("button", name="Draft ticket").first.click(); pause(page)
             else: check("a ticket's attached session opens that exact sample in Watch sessions", True, "this finding has no sampled sessions")
-            page.keyboard.press("Escape"); pause(page)
-            check("Escape closes the whole ticket popup in one press, without navigating away", page.evaluate("!SQ.state.ticketModalOpen") and page.evaluate("location.hash") == "#Overview")
-            check("closing the ticket popup restores focus to its opener", page.evaluate("document.activeElement.dataset.fk === 'top-draft'"))
-        else: check("Draft ticket carries the takeaway insight", False, "CTA missing")
+            page.get_by_role("button", name="Ticket created").click(); pause(page)
+            check("clicking Ticket created closes the inline ticket and restores the Draft ticket button",
+                  page.locator('[role="region"][aria-label="Ticket draft"]').count() == 0
+                  and page.locator('[data-fk="top-draft"]').is_visible())
+            check("closing the ticket restores focus to its opener", page.evaluate("document.activeElement.dataset.fk === 'top-draft'"))
+        else: check("Draft ticket shows the ticket inline", False, "CTA missing")
         route(page, "Overview")
         cta = page.get_by_role("link", name="Open in Journeys")
         if cta.count():
@@ -277,10 +264,13 @@ def main():
         draft_ticket = page.get_by_role("button", name=re.compile("Draft ticket"))
         if draft_ticket.count():
             before_hash = page.evaluate("location.hash")
-            draft_ticket.first.click(); wait_js(page, "SQ.state.ticketModalOpen === true")
-            check("Draft ticket opens the selected finding as a popup, without navigating away", page.evaluate("!!SQ.pickInsight('drawerInsight')") and page.evaluate("location.hash") == before_hash)
-            page.keyboard.press("Escape"); pause(page)
-        else: check("Draft ticket opens the selected finding", page.locator('[data-fk="pd-open"]').count() > 0)
+            draft_ticket.first.click(); pause(page)
+            check("Draft ticket shows the ticket inline on Journeys, no drawer, no route change",
+                  page.locator('[role="region"][aria-label="Ticket draft"]').is_visible()
+                  and not page.evaluate("!!SQ.state.ticketModalOpen")
+                  and page.evaluate("location.hash") == before_hash)
+            page.get_by_role("button", name="Ticket created").click(); pause(page)
+        else: check("Draft ticket shows the ticket inline on Journeys", False, "CTA missing")
         route(page, "Journeys")
         top_menu = page.get_by_role("button", name="Biggest leak actions")
         if top_menu.count():
@@ -293,8 +283,14 @@ def main():
         else: check("Watch sessions carries a finding", True, "already viewing the top issue, no biggest-leak menu")
 
         print("-- Finding drawer and session player")
-        route(page, "Overview")
-        page.get_by_role("button", name="Draft ticket").first.click(); wait_js(page, "SQ.state.ticketModalOpen === true"); pause(page)
+        # Overview/Journeys' own Draft ticket buttons draft inline now (no drawer); the full finding
+        # drawer (Next/Previous, Watch sessions) is still reachable from Journeys' "Biggest leak actions"
+        # menu (exercised above), which is the only page left that still renders the modal container.
+        # Open it directly here, the same way that menu item does, so this section's own
+        # drawer-navigation checks don't depend on which issue was left selected.
+        route(page, "Journeys")
+        page.evaluate("SQ.openTicketModal(SQ.problems()[0].id)")
+        wait_js(page, "SQ.state.ticketModalOpen === true"); pause(page)
         problems = page.evaluate("SQ.problems().length")
         if problems > 1:
             first_id = page.evaluate("SQ.pickInsight('drawerInsight').id")
