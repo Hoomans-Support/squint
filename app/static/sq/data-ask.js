@@ -9,6 +9,12 @@
   const SQ = window.SQ;
   const A = (SQ.ask = { draft: '', search: '', curId: null, menu: false, expanded: {}, copied: '', off: { sum: true, app: true }, fmt: 'pdf', notes: true, appendix: false, from: '', fromRoute: '' });
   const LIVE = Object.create(null);   // id -> synthetic ask[]-shaped entry for an answer that came back from a live /api/ask call
+  /* POST JSON, resolving to {ok, body} instead of throwing on a non-2xx status (the caller reads body.reason either
+     way) or on a body that fails to parse as JSON. Shared by askLive() and A.rewriteBrief(). */
+  function postJson(url, payload, signal) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal })
+      .then((r) => r.json().then((body) => ({ ok: r.ok, body })).catch(() => ({ ok: false, body: null })));
+  }
 
   const REFUSAL_HEAD = "I can't answer that from this data";
   const REFUSAL_TEXT = "Squint answers only from the saved results of this sample dataset: findings, rage-tap spots, data health and a few journeys. I won't guess. Try one of these instead.";
@@ -87,11 +93,19 @@
     if (!live(turn) || !turn.pending || turn.step < 4 || !turn.liveSettled) return;
     turn.pending = false; save(); SQ.redraw(); A.focus('ask-follow');
   };
+  /* Checked once per session (like A.ensureBriefAiStatus) so that once ASK_GEMINI_ENABLED is known to be off, later
+     unmatched questions skip the network round trip entirely instead of hitting a 503 on every single one. Before the
+     first check resolves, or while it is still on, askLive() is simply tried, same as before this status gate existed. */
+  let askStatusChecked = false, askLiveOn = null;
+  function ensureAskLiveStatus() {
+    if (askStatusChecked) return;
+    askStatusChecked = true;
+    fetch('/api/ask/status').then((r) => r.json()).then((b) => { askLiveOn = !!(b && b.enabled); }).catch(() => { askLiveOn = false; });
+  }
   function askLive(turn) {
     const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     turn.abort = ctrl;
-    fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: turn.q }), signal: ctrl ? ctrl.signal : undefined })
-      .then((r) => r.json().then((body) => ({ ok: r.ok, body })).catch(() => ({ ok: false, body: null })))
+    postJson('/api/ask', { question: turn.q }, ctrl ? ctrl.signal : undefined)
       .then(({ ok, body }) => {
         if (!live(turn)) return;
         if (ok && body && typeof body.answer === 'string' && body.answer.trim() && !body.refused) {
@@ -122,7 +136,11 @@
     th.at = Date.now();
     A.draft = ''; A.menu = false;
     save();
-    if (!entry) askLive(turn);
+    if (!entry) {
+      ensureAskLiveStatus();
+      if (askLiveOn === false) turn.liveSettled = true;   // known off: same refusal as before, no wasted round trip
+      else askLive(turn);
+    }
     const tick = () => {
       if (!live(turn) || !turn.pending) return;
       if (turn.step < 4) {
@@ -406,7 +424,7 @@
   /* ---------- Weekly brief: optional "Rewrite with Gemini" wording, off unless the server has BRIEF_AI_ENABLED=1.
      The three number tiles, finding titles and owners always stay the ones code computed; only the headline, the lead
      sentence and the per-finding "why" line are swapped for the server's verified rewrite. See docs/brief-ai-endpoint.md. */
-  A.briefAi = { statusChecked: false, status: false, loading: false, error: '', result: null, key: '' };
+  A.briefAi = { statusChecked: false, status: false, loading: false, error: '', errorKey: '', result: null, key: '' };
   const briefKey = () => SQ.scope.range + '|' + SQ.scope.platform + '|' + SQ.scope.persona;
   A.ensureBriefAiStatus = () => {
     if (A.briefAi.statusChecked) return;
@@ -418,16 +436,16 @@
     if (A.briefAi.loading || !ids.length) return;
     const key = briefKey();
     A.briefAi.loading = true; A.briefAi.error = ''; SQ.redraw();
-    fetch('/api/brief-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ range: SQ.scope.range, platform: SQ.scope.platform, persona: SQ.scope.persona, ids: ids.slice(0, 3), again: !!again }) })
-      .then((r) => r.json().then((body) => ({ ok: r.ok, body })).catch(() => ({ ok: false, body: null })))
+    postJson('/api/brief-ai', { range: SQ.scope.range, platform: SQ.scope.platform, persona: SQ.scope.persona, ids: ids.slice(0, 3), again: !!again })
       .then(({ ok, body }) => {
         A.briefAi.loading = false;
+        /* A failed retry (cooldown, rate limit, budget, unverified) must not erase an already-good rewrite from an
+           earlier click in this same session: only replace `result` on success, never null it out on failure. */
         if (ok && body && body.source === 'gemini') { A.briefAi.result = body; A.briefAi.key = key; A.briefAi.error = ''; }
-        else { A.briefAi.result = null; A.briefAi.error = (body && body.reason) || 'The AI did not answer. The standard wording stays.'; }
+        else { A.briefAi.error = (body && body.reason) || 'The AI did not answer. The standard wording stays.'; A.briefAi.errorKey = key; }
         SQ.redraw();
       })
-      .catch(() => { A.briefAi.loading = false; A.briefAi.result = null; A.briefAi.error = 'The AI did not answer. The standard wording stays.'; SQ.redraw(); });
+      .catch(() => { A.briefAi.loading = false; A.briefAi.error = 'The AI did not answer. The standard wording stays.'; A.briefAi.errorKey = key; SQ.redraw(); });
   };
   A.useStandardBrief = () => { A.briefAi.result = null; A.briefAi.error = ''; SQ.redraw(); };
 
@@ -472,6 +490,7 @@
     out.rewriteIds = todo.map((t) => t.id);
     const rwMatch = !!rw && A.briefAi.key === briefKey() && JSON.stringify(rw.ids) === JSON.stringify(out.rewriteIds);
     if (!rwMatch && rw) { A.briefAi.result = null; }        // scope moved on since the rewrite: drop it rather than show a stale one
+    if (A.briefAi.error && A.briefAi.errorKey !== briefKey()) { A.briefAi.error = ''; A.briefAi.errorKey = ''; }  // likewise for a stale error message
     out.aiRewritten = rwMatch;
     if (rwMatch) {
       out.hA = ''; out.hB = rw.headline; out.hC = '';
@@ -481,7 +500,9 @@
     }
     out.showRewrite = A.briefAi.status && !out.isCombo && out.hasTodo;
     out.rewriting = A.briefAi.loading;
-    out.hasAiError = !rwMatch && !!A.briefAi.error;
+    /* shown even when a good rewrite is still displayed above, e.g. "Rewrite again" hit a cooldown: the existing
+       rewrite stays visible and this explains why a newer one did not replace it */
+    out.hasAiError = !!A.briefAi.error;
     out.aiError = A.briefAi.error;
     return out;
   };
