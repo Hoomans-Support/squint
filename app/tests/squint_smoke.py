@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright
 
 URL = "http://127.0.0.1:8080/"
 ORIGIN = urlparse(URL)
-ROUTES = ("Main", "FlowPrototype", "Audiences", "Ask", "Brief", "DataSources",
+ROUTES = ("Overview", "Journeys", "Audiences", "ChatNow", "Recommendations", "DataSources",
           "ProblemDetail", "SessionPlayer", "AskFlow2", "AskFlow5")
 WIDTHS = (1440, 1280, 390)
 OUT = Path(__file__).resolve().parents[2] / "data" / "squint_shots"
@@ -64,17 +64,14 @@ def main():
                 inspect(page, f"{route} @ {width}px", route, errors, external)
                 if route == "Audiences" and width == 1440:
                     page.get_by_role("button", name="Copy audience summary").click()
-                    page.wait_for_function("() => document.body.innerText.includes('No person IDs are available') || document.body.innerText.includes('Copy is unavailable here')")
-                    check("audience copy explains counts only", "person IDs" in page.locator("body").inner_text() or "counts only" in page.locator("body").inner_text())
+                    page.wait_for_function("() => document.body.innerText.includes('Summary copied') || document.body.innerText.includes('Copy is unavailable here')")
+                    check("audience copy responds", "Summary copied" in page.locator("body").inner_text() or "Copy is unavailable here" in page.locator("body").inner_text())
                     check("audience copy has no page errors", not errors, "; ".join(errors[:2]))
                 if route == "DataSources" and width == 1440:
-                    # The note and refocus land after a microtask plus setTimeout(0) re-render,
-                    # so give each click a beat before reading document.activeElement.
-                    page.get_by_role("button", name="Connect database").click()
-                    page.wait_for_timeout(100)
-                    check("database connect stays disabled", "Ping us to unlock" in page.locator("body").inner_text() and page.evaluate("document.activeElement.dataset.fk") == "connect-db")
-                    snowflake = page.get_by_label("Snowflake")
-                    check("Snowflake stays locked", snowflake.is_visible() and not snowflake.is_enabled() and "Ping us to unlock" in page.locator("body").inner_text())
+                    body_text = page.locator("body").inner_text()
+                    check("own backend is shown as unconnected without a connect action",
+                          "Your backend" in body_text and "Not connected" in body_text
+                          and page.get_by_role("button", name="Connect database").count() == 0)
                     check("Upload is not offered", page.get_by_role("button", name="Upload").count() == 0)
                     check("local data-source actions have no page errors", not errors, "; ".join(errors[:2]))
                 page.screenshot(path=str(OUT / f"{route.lower()}-{width}.png"), full_page=True)
@@ -82,7 +79,7 @@ def main():
 
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
         errors, external = watch(page)
-        page.goto(URL + "#Main", wait_until="networkidle")
+        page.goto(URL + "#Overview", wait_until="networkidle")
         for value in ("30d", "24h", "7d"):
             page.locator('[data-fk="menu-range"]').click()
             page.locator(f'[data-fk="opt-{value}"]').click()
@@ -99,7 +96,7 @@ def main():
             group.click(force=True, timeout=5000)
             page.wait_for_timeout(150)
             check("scope menu selects a user group", "All users" not in page.locator('[data-fk="menu-user"]').inner_text())
-        inspect(page, "Main after scope changes @ 1440px", "Main", errors, external)
+        inspect(page, "Overview after scope changes @ 1440px", "Overview", errors, external)
         page.screenshot(path=str(OUT / "main-scoped-1440.png"), full_page=True)
         browser.close()
 

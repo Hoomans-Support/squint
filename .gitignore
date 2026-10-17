@@ -40,3 +40,7 @@ firebase-debug.log
 app/static.bak-before-squint/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+.pw-localappdata/
+
+# clickthrough.py screenshot output when run with a positional arg
+--real/

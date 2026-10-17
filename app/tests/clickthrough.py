@@ -91,10 +91,10 @@ def main():
         page.on("request", request)
 
         print("-- Navigation and route integrity")
-        route(page, "Main")
+        route(page, "Overview")
         nav = page.get_by_role("navigation", name="Sections")
-        expected = [("Overview", "Main"), ("Journeys", "FlowPrototype"), ("Audiences", "Audiences"),
-                    ("Chat now", "Ask"), ("Recommendations", "Brief"), ("Data sources", "DataSources")]
+        expected = [("Overview", "Overview"), ("Journeys", "Journeys"), ("Audiences", "Audiences"),
+                    ("Chat now", "ChatNow"), ("Recommendations", "Recommendations"), ("Data sources", "DataSources")]
         for label, target in expected:
             link = nav.get_by_role("link", name=re.compile(re.escape(label)))
             if link.count():
@@ -104,12 +104,12 @@ def main():
                 check(f"navigation: {label} opens {target} and is active", False, "link missing")
         # runtime.js rewrites a template's "Name.dc.html" href to "#Name" at render time, so the
         # live DOM never has the literal ".dc.html" string; scope to <header> to avoid matching
-        # the nav's own Overview link, which also points at #Main.
-        brand = page.locator('header a[href="#Main"]').first
+        # the nav's own Overview link, which also points at #Overview.
+        brand = page.locator('header a[href="#Overview"]').first
         if brand.count():
-            brand.click(); wait_js(page, "location.hash === '#Main'")
-        check("brand logo returns to Overview", page.evaluate("location.hash === '#Main'"))
-        route(page, "Main")
+            brand.click(); wait_js(page, "location.hash === '#Overview'")
+        check("brand logo returns to Overview", page.evaluate("location.hash === '#Overview'"))
+        route(page, "Overview")
         badge = page.locator('[aria-label="Sections"] a[aria-current="page"] [aria-label*="open critical"]')
         expected_critical = page.evaluate("SQ.problems().filter(p => p.severity === 'critical').length")
         check("Overview badge matches open critical problems", badge.count() == (1 if expected_critical else 0) and (not expected_critical or badge.inner_text() == str(expected_critical)))
@@ -165,7 +165,8 @@ def main():
                 platform.click()
                 selected_style = web_option.evaluate("el => getComputedStyle(el).backgroundColor") if web_option.count() else ""
                 check("selected platform is visibly marked in the open menu", web_option.get_attribute("aria-checked") == "true"
-                      and selected_style == "rgb(241, 243, 244)"
+                      and selected_style == "rgb(232, 240, 254)"
+                      and web_option.locator("svg").count() == 1
                       and platform.evaluate("el => getComputedStyle(el).backgroundColor") == "rgb(232, 240, 254)")
                 app_option = page.locator('[role="menu"][aria-label="Platform"] [data-fk="opt-app"]')
                 if app_option.count() and not app_option.is_disabled():
@@ -184,33 +185,50 @@ def main():
             web_option = page.locator('[data-fk="opt-web"]')
             check("single-platform scope reflects the only sample platform", app_option.count() == 1 and app_option.get_attribute("aria-checked") == "true" and web_option.is_disabled())
             page.locator('[data-fk="menu-platform"]').click(); pause(page)
-        old = scope_snapshot(); old_text = page.locator("#app").inner_text(); page.locator('[data-fk="compare"]').click(); pause(page)
-        check("compare toggle updates scope and rendered comparison", not page.evaluate("SQ.scope.compare") and scope_snapshot() != old and page.locator("#app").inner_text() != old_text)
-        page.locator('[data-fk="compare"]').click(); pause(page)
+        check("compare toggle removed, KPI deltas always on", page.locator('[data-fk="compare"]').count() == 0 and page.evaluate("SQ.scope.compare") is None)
 
         print("-- Overview scenarios")
-        route(page, "Main")
+        route(page, "Overview")
         top = page.evaluate("SQ.problems()[0] && SQ.problems()[0].id")
         # SQ.insight() is the raw results.json record and has no .action/.item; those are built
-        # by SQ.problemRec() (data-main.js), the same helper Main.js itself renders from.
+        # by SQ.problemRec() (data-main.js), the same helper Overview.js itself renders from.
         check("takeaway is the highest ranked current problem", bool(top) and page.evaluate("p => { const i = SQ.insight(p) && SQ.problemRec(SQ.insight(p)); const t = document.querySelector('#app').innerText; return !!i && t.includes(i.action) && t.includes(i.item); }", top))
-        if page.get_by_role("link", name="Draft ticket").count():
-            page.get_by_role("link", name="Draft ticket").first.click(); wait_js(page, "location.hash === '#ProblemDetail'")
+        if page.get_by_role("button", name="Draft ticket").count():
+            page.get_by_role("button", name="Draft ticket").first.click(); wait_js(page, "SQ.state.ticketModalOpen === true")
             check("Draft ticket carries the takeaway insight", page.evaluate("SQ.pickInsight('drawerInsight').id") == top)
             pause(page)
-            check("opening the finding drawer moves focus to its heading", page.evaluate("document.activeElement.dataset.fk === 'pd-title'"))
-            page.get_by_role("button", name="Draft ticket").click(); pause(page)
-            check("ticket draft opens with Copy and Download actions", page.locator('[aria-label="Ticket draft text"]').is_visible() and page.get_by_role("button", name="Copy").is_visible() and page.get_by_role("button", name=re.compile("Download")).is_visible())
+            check("opening the ticket popup moves focus to its heading", page.evaluate("document.activeElement.dataset.fk === 'pd-title'"))
+            check("the popup opens on the finding drawer (reason, ruled-out, owner), not straight to the ticket, and stays on this page",
+                  page.locator('[data-fk="pd-ticket"]').is_visible()
+                  and page.locator('[aria-label="Owner"]').is_visible()
+                  and page.evaluate("location.hash") == "#Overview")
+            owner = page.locator('[aria-label="Owner"]')
+            owner.select_option("Engineering"); pause(page)
+            check("the owner dropdown selection sticks", owner.input_value() == "Engineering")
+            page.locator('[data-fk="pd-ticket"]').click(); pause(page)
+            check("clicking Draft ticket in the drawer drafts the actual ticket",
+                  page.locator('[role="region"][aria-label="Ticket draft"]').is_visible()
+                  and page.get_by_role("button", name="Copy").is_visible()
+                  and page.get_by_role("button", name=re.compile("Download")).is_visible())
+            check("the drafted ticket shows no Draft ticket or Watch sessions button", page.locator('[data-fk="pd-ticket"]').count() == 0 and page.locator('[data-fk="pd-watch"]').count() == 0)
+            session_row = page.locator('[role="region"][aria-label="Ticket draft"] button').filter(has_text=re.compile(r"\b(AM|PM)\b"))
+            if session_row.count():
+                session_row.first.click(); wait_js(page, "location.hash === '#SessionPlayer'")
+                check("a ticket's attached session opens that exact sample in Watch sessions", page.evaluate("!!SQ.pickInsight('watchInsight')"))
+                route(page, "Overview")
+                page.get_by_role("button", name="Draft ticket").first.click(); wait_js(page, "SQ.state.ticketModalOpen === true")
+                page.locator('[data-fk="pd-ticket"]').click(); pause(page)
+            else: check("a ticket's attached session opens that exact sample in Watch sessions", True, "this finding has no sampled sessions")
             page.keyboard.press("Escape"); pause(page)
-            check("Escape first closes the ticket draft", page.evaluate("location.hash === '#ProblemDetail'") and page.locator('[aria-label="Ticket draft text"]').count() == 0)
+            check("Escape first returns from the ticket to the finding drawer", page.evaluate("SQ.state.ticketModalOpen === true") and page.locator('[data-fk="pd-ticket"]').count() == 1)
             page.keyboard.press("Escape"); pause(page)
-            check("Escape closes the finding drawer", page.evaluate("location.hash !== '#ProblemDetail'"))
-            check("closing the finding drawer restores focus to its opener", page.evaluate("document.activeElement.matches('a[href=\"#ProblemDetail\"]')"))
+            check("Escape then closes the ticket popup without navigating away", page.evaluate("!SQ.state.ticketModalOpen") and page.evaluate("location.hash") == "#Overview")
+            check("closing the ticket popup restores focus to its opener", page.evaluate("document.activeElement.dataset.fk === 'top-draft'"))
         else: check("Draft ticket carries the takeaway insight", False, "CTA missing")
-        route(page, "Main")
+        route(page, "Overview")
         cta = page.get_by_role("link", name="Open in Journeys")
         if cta.count():
-            cta.click(); wait_js(page, "location.hash === '#FlowPrototype'"); pause(page)
+            cta.click(); wait_js(page, "location.hash === '#Journeys'"); pause(page)
             # Journeys consumes and deletes SQ.state.journeyInsight on its first render (it is a
             # one-shot handoff, not a lasting flag), so the observable result is the "opened from
             # Pn" crumb and the preselected issue, not the now-cleared state key.
@@ -218,12 +236,12 @@ def main():
                 "id => { const rank = (SQ.problems().find(p => p.id === id) || {}).__p; "
                 "return !!rank && document.querySelector('#app').innerText.includes('opened from ' + rank); }", top))
         else: check("Open in Journeys carries its insight", False, "CTA missing")
-        route(page, "Main")
+        route(page, "Overview")
         ordered_rows = page.evaluate("() => { const ids = SQ.problems().slice(1).map(p => 'row-' + p.id); const got = [...document.querySelectorAll('[data-fk^=\"row-\"]')].map(e => e.dataset.fk); return JSON.stringify(ids) === JSON.stringify(got); }")
         check("other problems table lists the remaining findings in rank order", ordered_rows)
 
         print("-- Journeys scenarios")
-        route(page, "FlowPrototype")
+        route(page, "Journeys")
         tabs = page.locator('[aria-label="Journey"] button')
         count = tabs.count()
         expected_tabs = page.evaluate("SQ.data.scope.journeys.length")
@@ -252,21 +270,27 @@ def main():
             disclosures.first.locator("summary").click()
             check("product-completion disclosure expands", disclosures.first.get_attribute("open") is not None)
         else: check("product-completion disclosure expands", False, "disclosure missing")
-        see_why = page.get_by_role("button", name=re.compile("See why"))
-        if see_why.count():
-            see_why.first.click(); wait_js(page, "location.hash === '#ProblemDetail'")
-            check("See why opens the selected finding", page.evaluate("!!SQ.pickInsight('drawerInsight')"))
-        else: check("See why opens the selected finding", page.locator('[data-fk="pd-open"]').count() > 0)
-        route(page, "FlowPrototype")
-        watch = page.get_by_role("button", name=re.compile("Watch sessions"))
-        if watch.count():
-            watch.first.click(); wait_js(page, "location.hash === '#SessionPlayer'")
-            check("Watch sessions carries a finding", page.evaluate("!!SQ.pickInsight('watchInsight')"))
-        else: check("Watch sessions carries a finding", True, "no sampled session for selected issue")
+        draft_ticket = page.get_by_role("button", name=re.compile("Draft ticket"))
+        if draft_ticket.count():
+            before_hash = page.evaluate("location.hash")
+            draft_ticket.first.click(); wait_js(page, "SQ.state.ticketModalOpen === true")
+            check("Draft ticket opens the selected finding as a popup, without navigating away", page.evaluate("!!SQ.pickInsight('drawerInsight')") and page.evaluate("location.hash") == before_hash)
+            page.keyboard.press("Escape"); pause(page)
+        else: check("Draft ticket opens the selected finding", page.locator('[data-fk="pd-open"]').count() > 0)
+        route(page, "Journeys")
+        top_menu = page.get_by_role("button", name="Biggest leak actions")
+        if top_menu.count():
+            top_menu.first.click(); pause(page)
+            watch = page.get_by_role("menuitem", name="Watch sessions")
+            if watch.count():
+                watch.first.click(); wait_js(page, "location.hash === '#SessionPlayer'")
+                check("Watch sessions carries a finding", page.evaluate("!!SQ.pickInsight('watchInsight')"))
+            else: check("Watch sessions carries a finding", True, "top issue has no sampled session")
+        else: check("Watch sessions carries a finding", True, "already viewing the top issue, no biggest-leak menu")
 
         print("-- Finding drawer and session player")
-        route(page, "Main")
-        page.get_by_role("link", name="Draft ticket").first.click(); wait_js(page, "location.hash === '#ProblemDetail'"); pause(page)
+        route(page, "Overview")
+        page.get_by_role("button", name="Draft ticket").first.click(); wait_js(page, "SQ.state.ticketModalOpen === true"); pause(page)
         problems = page.evaluate("SQ.problems().length")
         if problems > 1:
             first_id = page.evaluate("SQ.pickInsight('drawerInsight').id")
@@ -307,7 +331,7 @@ def main():
             check("session player shows a clear no-sample fallback when needed", "No sampled sessions for this finding" in text(page))
 
         print("-- Ask and Weekly brief scenarios (local matcher; no Gemini)")
-        route(page, "Ask")
+        route(page, "ChatNow")
         more_questions = page.locator("details").first
         if more_questions.count():
             more_questions.locator("summary").click(); pause(page)
@@ -337,11 +361,8 @@ def main():
         else: check("unmatched Ask question returns the honest refusal", False, "composer missing")
         search = page.locator('input[placeholder*="Search"], input[aria-label*="Search"]').first
         if search.count() and not search.is_visible():
-            options = page.get_by_role("button", name="History options")
-            if options.count():
-                options.last.click(); pause(page)
-                show_history = page.get_by_role("menuitem", name="Show history")
-                if show_history.count(): show_history.click(); pause(page)
+            show_history = page.get_by_role("button", name=re.compile("Show history"))
+            if show_history.count(): show_history.last.click(); pause(page)
         if search.count():
             # The follow-up became a second turn in the SAME thread (the one from the
             # suggested question), not a new top-level history entry, so the button's visible
@@ -358,19 +379,14 @@ def main():
         else:
             check("Ask history stores questions and filters a search", False, "search box missing")
         if search.count(): search.fill(""); pause(page)
-        more = page.get_by_role("button", name=re.compile("More: pin"))
-        pinned_ok = False
-        if more.count():
-            more.first.click();
-            pin = page.get_by_role("menuitem", name=re.compile("Pin|Unpin"))
-            if pin.count(): pin.first.click(); pause(page); pinned_ok = page.evaluate("!!SQ.ask.cur() && SQ.ask.cur().pinned")
-        check("Ask history can be pinned", pinned_ok)
-        export = page.get_by_role("link", name=re.compile("Export slides"))
+        check("Ask pin feature removed", page.get_by_role("menuitem", name=re.compile("Pin|Unpin")).count() == 0
+              and "pinned" not in (page.evaluate("JSON.stringify(SQ.ask.cur() || {})") or ""))
+        export = page.get_by_role("link", name=re.compile("^Export$"))
         if export.count():
             export.click(); wait_js(page, "location.hash === '#AskFlow5'"); pause(page)
             check("slide export opens a preview with at most three stat cards", page.get_by_role("heading", name="Export as slides").is_visible() and page.locator('div[style*="aspect-ratio"] .num').count() <= 3)
         else: check("slide export opens a preview with at most three stat cards", "Export" not in text(page))
-        route(page, "Brief")
+        route(page, "Recommendations")
         check("weekly brief shows the top problem and three numbers", bool(page.evaluate("SQ.problems()[0]")) and page.locator(".num").count() >= 3)
         brief_before = page.locator(".sq-bart").inner_text()
         page.locator('[data-fk="menu-range"]').click(); page.locator('[data-fk="opt-24h"]').click(); pause(page)
@@ -378,8 +394,7 @@ def main():
         page.get_by_role("button", name=re.compile("Copy text")).click(); pause(page)
         check("brief Copy text gives feedback", "Copied" in text(page) or "Copy is blocked" in text(page))
         check("brief export is titled Recommendations", page.evaluate("SQ.ask.brief().text.startsWith('# Recommendations') && SQ.ask.brief().kicker.includes('Recommendations')"))
-        page.get_by_role("button", name=re.compile("Share")).click(); pause(page)
-        check("brief Share gives feedback", "copied" in text(page).lower() or "blocked" in text(page).lower())
+        check("brief Share button removed", page.get_by_role("button", name=re.compile("Share")).count() == 0)
 
         print("-- Audiences, Data sources, widths, populated and empty scopes")
         route(page, "Audiences")
@@ -422,15 +437,33 @@ def main():
         check("sample includes populated and empty user-group scopes", bool(populated and empty), f"populated={populated}, empty={empty}")
         if empty:
             # Data sources has no ScopeBar (it isn't filtered by date/platform/user group), so
-            # the user-group menu only exists on a page that imports ScopeBar; go to Main first.
-            route(page, "Main")
+            # the user-group menu only exists on a page that imports ScopeBar; go to Overview first.
+            route(page, "Overview")
             page.locator('[data-fk="menu-user"]').click(); opt = page.locator(f'input[data-fk="opt-{empty}"]')
             if opt.count(): opt.click(force=True); pause(page)
             check("empty user-group scope shows the no-problems state", "Nothing needs attention in this scope" in text(page))
 
+        print("-- Mark fixed (run last: it permanently removes an issue from SQ.problems() for the rest of this session)")
+        route(page, "Journeys")
+        tabs = page.get_by_role("tab")
+        if tabs.count() > 1:
+            tabs.nth(1).click(); pause(page)
+        top_menu = page.get_by_role("button", name="Biggest leak actions")
+        if top_menu.count():
+            before_ids = set(page.evaluate("SQ.problems().map(p => p.id)"))
+            top_menu.first.click(); pause(page)
+            mark_fixed = page.get_by_role("menuitem", name="Mark fixed")
+            if mark_fixed.count():
+                mark_fixed.first.click(); pause(page)
+                after_ids = set(page.evaluate("SQ.problems().map(p => p.id)"))
+                removed = before_ids - after_ids
+                check("Mark fixed removes the issue from open problems", len(removed) == 1 and len(after_ids) == len(before_ids) - 1)
+            else: check("Mark fixed removes the issue from open problems", True, "biggest-leak menu has no Mark fixed item")
+        else: check("Mark fixed removes the issue from open problems", True, "no biggest-leak menu available in this scope")
+
         for width in (1440, 1280, 390):
             page.set_viewport_size({"width": width, "height": 844 if width == 390 else 1000})
-            for name in ("Main", "FlowPrototype", "Audiences", "Ask", "Brief", "DataSources", "ProblemDetail", "SessionPlayer", "AskFlow2", "AskFlow5"):
+            for name in ("Overview", "Journeys", "Audiences", "ChatNow", "Recommendations", "DataSources", "ProblemDetail", "SessionPlayer", "AskFlow2", "AskFlow5"):
                 route(page, name)
                 body = text(page)
                 overflow = page.evaluate("document.documentElement.scrollWidth > window.innerWidth")
