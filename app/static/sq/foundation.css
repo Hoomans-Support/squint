@@ -1,4 +1,5 @@
 /* Ported from final-direction/index.html (design prototype). Blocks kept in the prototype's order so rendering matches it. */
+/* redeploy marker: forcing a new content hash after a CDN serving glitch on this file, 2026-10-17 */
 body{margin:0}
 a{color:#1A73E8}a:hover{color:#174EA6}
 .card{background:#FFFFFF;border:1px solid #DADCE0;border-radius:12px}
