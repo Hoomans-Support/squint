@@ -6,8 +6,7 @@ class Component extends DCLogic {
     const showFuture = !!this.state.showFuture;
     return {
       ...M,
-      showFuture, futureStr: showFuture ? 'true' : 'false',
-      chevronRotate: showFuture ? 'rotate(180deg)' : 'rotate(0deg)',
+      flipTransform: showFuture ? 'rotateY(180deg)' : 'rotateY(0deg)',
       toggleFuture: () => this.setState({ showFuture: !showFuture })
     };
   }
