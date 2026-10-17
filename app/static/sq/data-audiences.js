@@ -81,7 +81,8 @@
       stepsMatched: steps.matched, stepsTotal: steps.total, stepsReview: steps.to_review,
       synthetic: D.synthetic && app.synthetic && D.backend_sample.synthetic,
       dataset: app.dataset, tableDataset: D.backend_sample.dataset, location: D.backend_sample.location,
-      locked: signals.filter((s) => s.status === 'Needs backend').length
+      locked: signals.filter((s) => s.status === 'Needs backend').length,
+      eventsMatchedPct: pct(match.share), eventsUnmatched: n(match.unmatched_events)
     };
   };
 })();

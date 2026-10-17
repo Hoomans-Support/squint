@@ -3,7 +3,13 @@ class Component extends DCLogic {
   renderVals() {
     const M = SQ.dataSourceModel();
     setTimeout(() => SQ.animateCounts('.ds-count'), 180);
-    return M;
+    const showFuture = !!this.state.showFuture;
+    return {
+      ...M,
+      showFuture, futureStr: showFuture ? 'true' : 'false',
+      chevronRotate: showFuture ? 'rotate(180deg)' : 'rotate(0deg)',
+      toggleFuture: () => this.setState({ showFuture: !showFuture })
+    };
   }
 }
 function animateCounts(selector) {
