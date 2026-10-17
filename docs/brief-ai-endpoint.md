@@ -1,6 +1,6 @@
 # Brief rewrite endpoint ("Rewrite with Gemini")
 
-All data is SYNTHETIC. **Built but OFF.** Nothing in this feature calls Gemini unless `BRIEF_AI_ENABLED=1` is set, on any machine. While it is off the Brief shows its standard wording and the button is drawn greyed out, with no note, so the feature can be seen; nothing happens on click.
+All data is SYNTHETIC. **Built but OFF by default.** Nothing in this feature calls Gemini unless `BRIEF_AI_ENABLED=1` is set, on any machine. Wired into the Brief tab (`app/static/sq/c/Brief.{html,js}`, logic in `app/static/sq/data-ask.js`'s `A.briefAi`/`A.rewriteBrief`, 2026-10-17): the page checks `/api/brief-ai/status` once and the **Rewrite with Gemini** button only renders at all when that returns `true` and the scope is a single user group with at least one open finding; while it is off, the button is absent, not disabled, and the Brief shows only its standard wording.
 
 ## What it does
 
@@ -38,4 +38,4 @@ The model sees only aggregated numbers already in `results.json` plus saved expl
 
 ## Tests
 
-`.venv/Scripts/python app/tests/brief_ai_test.py` (27 checks, no network). No real Gemini call has been made for this feature; the first live prompt and wording have not been seen yet, so read a real answer before activating.
+`.venv/Scripts/python app/tests/brief_ai_test.py` (no network; check count drifts as the suite grows, run it for the current number). A real Gemini call has been made against this feature: 2026-10-15, prompt `br-v6`, 9 of 10 live answers verified (the tenth fell back to standard wording, as designed) — see that date's `log.md` entry before changing the prompt again. Also verified locally 2026-10-17 end to end through the wired-up Brief tab in mock mode (rewrite, revert to standard wording, and the combo-scope hide all behave as documented above); not yet exercised against a real (non-mock) Gemini call through this particular UI wiring.
