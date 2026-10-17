@@ -6,7 +6,7 @@
   const SQ = window.SQ;
 
   /* ---- scope: shared by every page's scope bar and kept while the visitor moves between pages ---- */
-  SQ.scope = { range: '7d', persona: 'all', platform: 'all', compare: true };
+  SQ.scope = { range: '7d', persona: 'all', platform: 'all' };
   SQ.RANGES = { '24h': { label: 'Last 24 hours', short: 'Last 24h', days: 1 }, '7d': { label: 'Last 7 days', short: 'Last 7 days', days: 7 }, '30d': { label: 'Last 30 days', short: 'Last 30 days', days: 30 } };
   SQ.setScope = (patch) => { Object.assign(SQ.scope, patch); SQ.redraw(); };
 
@@ -64,10 +64,21 @@
     return view;
   };
   SQ.insight = (id) => SQ.data.insights.find((i) => i.id === id);
+  /* ---- "mark fixed": a visitor's own session-local note that a finding no longer needs attention. Kept in
+     sessionStorage only (like Ask history), never sent anywhere, so it never hides a finding for anyone else. ---- */
+  const FIXED_KEY = 'sq.fixedIds';
+  let fixedIds = new Set();
+  try { fixedIds = new Set(JSON.parse(sessionStorage.getItem(FIXED_KEY) || '[]')); } catch (_) { /* session-only, starts empty if storage is unavailable */ }
+  SQ.isFixed = (id) => fixedIds.has(id);
+  SQ.markFixed = (id) => {
+    fixedIds.add(id);
+    try { sessionStorage.setItem(FIXED_KEY, JSON.stringify([...fixedIds])); } catch (_) { /* this mark lasts for this visit only */ }
+    SQ.redraw();
+  };
   /* the open problems for the current scope, worst first (critical, then warning), with a stable priority label P1, P2, ... */
   SQ.problems = () => {
     const order = { critical: 0, warning: 1, healthy: 2 };
-    const all = SQ.data.insights.filter((i) => i.severity !== 'healthy').slice().sort((a, b) => (order[a.severity] - order[b.severity]) || ((b.impact || {}).score || 0) - ((a.impact || {}).score || 0));
+    const all = SQ.data.insights.filter((i) => i.severity !== 'healthy' && !fixedIds.has(i.id)).slice().sort((a, b) => (order[a.severity] - order[b.severity]) || ((b.impact || {}).score || 0) - ((a.impact || {}).score || 0));
     all.forEach((i, k) => { i.__p = 'P' + (k + 1); });
     const inView = new Set(SQ.view().insight_ids);
     return all.filter((i) => inView.has(i.id));
@@ -84,7 +95,7 @@
      component framework re-renders by replacing DOM nodes, so new chart elements keep appearing after the first
      page load; a MutationObserver picks those up instead of a one-time querySelectorAll. ---- */
   try {
-    const GROW_SEL = '.sq-grow-x, .sq-grow-y, .track > *, .sqa-track > *';
+    const GROW_SEL = '.sq-grow-x, .sq-grow-y, .track > *, .sqa-track > *, .sq-wipe';
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); } });
     }, { threshold: 0.2 });   // a chart already on screen at load fires right away (IntersectionObserver checks on observe());
@@ -98,4 +109,15 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => watch(document.body));
     else watch(document.body);
   } catch (_) { /* no IntersectionObserver (very old browser): charts keep their scaled-to-0 base style, acceptable degrade */ }
+
+  /* ---- "i" info circles (.ds-context, a native <details>) open on hover/focus, not only a click. A closed
+     <details>'s non-summary content is kept out of the render tree by the browser itself, so this has to set
+     the real `open` attribute rather than a CSS-only show/hide (see squint.css for what was tried first and
+     why it didn't paint). pointerover/pointerout and focusin/focusout all bubble, so one delegated listener
+     covers every .ds-context on every page, including ones added later by a re-render. ---- */
+  const dsCtx = (t) => t && t.closest && t.closest('.ds-context');
+  document.addEventListener('pointerover', (e) => { const c = dsCtx(e.target); if (c) c.open = true; });
+  document.addEventListener('pointerout', (e) => { const c = dsCtx(e.target); if (c && !c.contains(e.relatedTarget)) c.open = false; });
+  document.addEventListener('focusin', (e) => { const c = dsCtx(e.target); if (c) c.open = true; });
+  document.addEventListener('focusout', (e) => { const c = dsCtx(e.target); if (c && !c.contains(e.relatedTarget)) c.open = false; });
 })();

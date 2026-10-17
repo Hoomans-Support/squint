@@ -221,7 +221,7 @@
         vs: isSeg && drop ? 'vs ' + P(drop.reference) + (drop.ratio ? ' · ' + Number(drop.ratio).toFixed(1) + '×' : '') : (rate != null ? '· ' + PP(rate * 100) + ' leave' : ''),
         vis: 'step', segment: isSeg ? [personaId && SQ.plural(personaId), prodLabel].filter(Boolean).map(cap).join(', ') : '', personaId, segmentVis: isSeg,
         stats, whyLabel: 'Why', whyTag: ai ? (conf != null && conf < 0.6 ? 'AI · low confidence' : 'AI') : (dg.source === 'unclassified' ? 'Needs review' : 'Calculated'), why,
-        primary: 'See why', route: 'ProblemDetail', hasWatch: (ins.replays || 0) > 0,
+        primary: 'Draft ticket', route: 'ProblemDetail', hasWatch: (ins.replays || 0) > 0,
         whoMeasure: 'exit rate here', whoTick: tick, whoVals: whoVals.map((r) => [r.label, r.v])
       });
     });
@@ -238,7 +238,7 @@
           short: s.name, step: i, metric: 'exit', value: 'n/a', unit: '', share: PP(s.left / totalLeft * 100), conf: s.reached >= 200 ? 2 : 1, signal: PP(s.left / totalLeft * 100) + ' of exits', vs: '· ' + PP(rate * 100) + ' leave', vis: 'step', segmentVis: false,
           stats: [['Share of all exits', PP(s.left / totalLeft * 100), s.left + ' of ' + SQ.fmt(totalExits) + ' who left', true], ['Leave here', PP(rate * 100), 'of ' + SQ.fmt(s.reached) + ' who reached it'], ['Stuck over 30s', s.sig ? PP(s.sig[3]) : 'n/a', 'of sessions at this step']],
           whyLabel: 'Why', whyTag: 'Calculated', why: 'No diagnosed problem here yet. This is the step where the most sessions leave, so it is the first place to look.',
-          primary: 'Investigate', route: 'Ask', hasWatch: false, whoMeasure: 'exit rate here', whoTick: rate * 100, whoVals: whoFromViews(i, 'exit').map((r) => [r.label, r.v])
+          primary: 'Investigate', route: 'ChatNow', hasWatch: false, whoMeasure: 'exit rate here', whoTick: rate * 100, whoVals: whoFromViews(i, 'exit').map((r) => [r.label, r.v])
         });
       }
     }
@@ -282,7 +282,7 @@
         action: 'Investigate', item: c.s.name, who: pl, ctx: blind ? '· hidden by a healthy average' : '· ' + NAME[c.m], short: c.s.name + ' · ' + pl,
         step: c.si, metric: c.m, value: '', unit: '', share: '', conf: c.pst.sessions >= 200 ? 2 : 1, signal: PP(c.v) + ' ' + ({ exit: 'exit', dead: 'dead taps', back: 'going back', stuck: 'stuck' }[c.m]), vs: 'vs ' + PP(c.b) + ' · ' + c.ratio.toFixed(1) + '×', vis: 'step', segmentVis: true,
         stats, whyLabel: 'Why', whyTag: 'Calculated', why: cap(pl) + ' show ' + PP(c.v) + ' ' + NAME[c.m].replace('leaving here', 'leaving') + ' at ' + c.s.name + ', against ' + PP(c.b) + ' for everyone' + (blind ? '. The overall average looks healthy, so this goes unnoticed.' : '.'),
-        primary: 'Investigate', route: 'Ask', hasWatch: false, whoMeasure: NAME[c.m], whoTick: c.b, whoVals: gv.map((r) => [r.label, r.v])
+        primary: 'Investigate', route: 'ChatNow', hasWatch: false, whoMeasure: NAME[c.m], whoTick: c.b, whoVals: gv.map((r) => [r.label, r.v])
       });
     });
 
@@ -317,16 +317,18 @@
     return { tabs, byId, defaultId: first && byId[first.journey] ? first.journey : D.scope.journeys[0].id };
   };
 
-  /* products: completion of the transaction journey per product (whole sample, not range-specific) */
-  SQ.productCompletion = () => {
-    const pf = SQ.data.product_funnels || {};
+  /* completion of the transaction journey, grouped by any one of the funnel dimensions the pipeline
+     publishes (whole sample, not range-specific): product_funnels, device_funnels, app_version_funnels. */
+  SQ.dimCompletion = (key) => {
+    const pf = SQ.data[key] || {};
     const rows = Object.keys(pf).map((k) => {
       const f = pf[k];
       const worst = f.steps.filter((s) => s.exit_rate != null && s.id !== 'done').sort((a, b) => b.exit_rate - a.exit_rate)[0];
       return { label: f.label, sessions: f.sessions, completion: f.completion, worst };
     });
     const tot = rows.reduce((a, r) => a + r.sessions, 0) || 1;
-    const avg = rows.reduce((a, r) => a + r.sessions * r.completion, 0) / tot;
+    const avg = tot ? rows.reduce((a, r) => a + r.sessions * r.completion, 0) / tot : 0;
     return { rows: rows.sort((a, b) => a.completion - b.completion), avg };
   };
+  SQ.productCompletion = () => SQ.dimCompletion('product_funnels');
 })();

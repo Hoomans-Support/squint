@@ -1,4 +1,4 @@
-SQ.define("Ask", function (DCLogic) {
+SQ.define("ChatNow", function (DCLogic) {
 class Component extends DCLogic {
   renderVals() {
     const A = SQ.ask;
@@ -11,11 +11,8 @@ class Component extends DCLogic {
     const toggleHistory = () => {
       historyOpen = !historyOpen;
       try { sessionStorage.setItem('sq.ask.history.open', String(historyOpen)); } catch (_) { /* session-only preference is optional */ }
-      A.historyMenu = false;
       SQ.redraw();
     };
-    const toggleHistoryMenu = () => { A.historyMenu = !A.historyMenu; A.menu = false; SQ.redraw(); };
-    const clearHistory = () => { A.clearAll(); };
     const entries = A.entries();
     const hasThread = !!th;
     const landing = !hasThread;
@@ -54,7 +51,6 @@ class Component extends DCLogic {
           showCollapsed: !pending && !!a && !open, toggle: () => { A.expanded[key] = true; SQ.redraw(); },
           showRefusal: !pending && !a, tryList: entries.slice(0, 4).map((x) => ({ q: x.question, ask: ask(x.question) })),
           showAnswer: !pending && !!a && open,
-          pin: () => A.togglePin(th),
           copy: () => a && A.copy(A.textOf(a), 'ans' + key),
           copyLabel: A.copied === 'ans' + key ? 'Copied' : 'Copy as text'
         };
@@ -83,9 +79,7 @@ class Component extends DCLogic {
       historyDisplay: historyOpen ? '' : 'display: none;',
       historyExpanded: historyOpen ? 'true' : 'false',
       historyToggleLabel: historyOpen ? 'Hide history' : 'Show history',
-      toggleHistory, toggleHistoryMenu, clearHistory,
-      historyMenu: !!A.historyMenu, historyMenuStr: A.historyMenu ? 'true' : 'false',
-      hasAnyHistory: allThreads.length > 0,
+      toggleHistory,
       groups, noHistory: allThreads.length === 0, hasHistory: allThreads.length > 0,
       emptyHistory: A.search ? 'Nothing matches.' : 'Your questions will appear here.',
       search: A.search,
@@ -95,14 +89,7 @@ class Component extends DCLogic {
       title: th ? th.title : '', turns,
       canExport: answered > 0,
       banner: th ? ('Answered ' + dateText + ' from data up to ' + SQ.asOf() + '. This is the newest data in the sample, so there is nothing to re-run.') : '',
-      menu: A.menu, menuStr: A.menu ? 'true' : 'false',
-      toggleMenu: () => { A.menu = !A.menu; A.historyMenu = false; SQ.redraw(); },
-      infoTagsOpen: !!A.infoTags, infoTagsStr: A.infoTags ? 'true' : 'false',
-      toggleInfoTags: () => { A.infoTags = !A.infoTags; SQ.redraw(); },
-      pin: () => th && A.togglePin(th), pinLabel: th && th.pinned ? 'Unpin' : 'Pin',
       remove: () => th && A.remove(th),
-      share: () => th && A.copy(A.threadText(th), 'share'),
-      shareLabel: A.copied === 'share' ? 'Copied' : 'Share',
       suggest, showSug: !!th && !pendingNow && suggest.length > 0,
       suggestMore, hasMore: suggestMore.length > 0,
       draft: A.draft,

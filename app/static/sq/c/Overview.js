@@ -1,7 +1,6 @@
-SQ.define("Main", function (DCLogic) {
+SQ.define("Overview", function (DCLogic) {
 class Component extends DCLogic {
   renderVals() {
-    setTimeout(() => SQ.animateCounts('.sq-count'), 180);
     const sc = SQ.scope;
     const view = SQ.view();
     const probs = SQ.problems().filter((i) => !SQ.settings.alertsCriticalOnly || i.severity === 'critical');
@@ -9,8 +8,8 @@ class Component extends DCLogic {
     const critCount = probs.filter((i) => i.severity === 'critical').length;
     const period = { '24h': ['Today', 'today'], '7d': ['This week', 'this week'], '30d': ['This month', 'this month'] }[sc.range] || ['This week', 'this week'];
 
-    // open ticket draft / open journeys: the target page reads the insight id from SQ.state
-    const draft = (id) => () => { SQ.state.drawerInsight = id; };
+    // open ticket draft (a popup over this page, not a route) / open journeys: the target page reads the insight id from SQ.state
+    const draft = (id) => () => SQ.openTicketModal(id);
     const journeys = (id) => () => { SQ.state.journeyInsight = id; };
     const askAI = (id) => () => {
       const entry = SQ.ask.entryForInsight(id);
@@ -35,7 +34,7 @@ class Component extends DCLogic {
       draft: draft(t.id), journeys: journeys(t.id), askAI: askAI(t.id)
     };
 
-    // ---- KPI row: from view.kpis, deltas only while compare is on ----
+    // ---- KPI row: from view.kpis, deltas vs the previous comparable period ----
     const kpi = (id) => view.kpis.find((k) => k.id === id);
     const arrowGood = (k, d) => (d === 0 ? '#5F6368' : ((d > 0) === !!k.higher_is_better ? '#5F6368' : '#C5221F'));
     const conv = kpi('conversion'), risk = kpi('value_at_risk');
@@ -44,7 +43,7 @@ class Component extends DCLogic {
       const d = conv.prev == null ? null : Math.round((conv.value - conv.prev) * 10) / 10;
       kpis.push({
         label: conv.label, value: SQ.pct1(conv.value), unit: '',
-        hasDelta: sc.compare && d !== null, delta: d === null ? '' : (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d).toFixed(1) + ' pts', deltaColor: d === null ? '#5F6368' : arrowGood(conv, d),
+        hasDelta: d !== null, delta: d === null ? '' : (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d).toFixed(1) + ' pts', deltaColor: d === null ? '#5F6368' : arrowGood(conv, d),
         base: 'vs ' + SQ.pct1(conv.prev) + ' ' + (conv.prev_label || 'before'), title: conv.sub || ''
       });
     }
@@ -52,7 +51,7 @@ class Component extends DCLogic {
       const d = risk.prev == null ? null : risk.value - risk.prev;
       kpis.push({
         label: 'Total value at risk', value: SQ.money(risk.value), unit: ' per week',
-        hasDelta: sc.compare && d !== null, delta: d === null ? '' : d === 0 ? 'no change' : (d > 0 ? '+' : '−') + SQ.money(Math.abs(d)), deltaColor: d === null ? '#5F6368' : arrowGood(risk, d),
+        hasDelta: d !== null, delta: d === null ? '' : d === 0 ? 'no change' : (d > 0 ? '+' : '−') + SQ.money(Math.abs(d)), deltaColor: d === null ? '#5F6368' : arrowGood(risk, d),
         base: 'vs ' + SQ.money(risk.prev) + ' ' + (risk.prev_label || 'before'), title: ''
       });
     }
@@ -61,6 +60,16 @@ class Component extends DCLogic {
       hasDelta: true, delta: critCount + ' critical', deltaColor: '#5F6368',
       base: 'of ' + view.insight_ids.length + ' findings checked', title: 'Open problems and findings in this scope'
     });
+
+    // ---- one-line overall trend vs the previous comparable period, shown under the KPI row ----
+    const trendNote = (() => {
+      if (!conv || conv.prev == null) return '';
+      const d = Math.round((conv.value - conv.prev) * 10) / 10;
+      const label = conv.prev_label || 'the previous period';
+      if (d === 0) return 'Conversion is flat vs ' + label + '.';
+      const dir = (d > 0) === !!conv.higher_is_better ? 'improving' : 'slipping';
+      return 'Conversion is ' + dir + ' ' + Math.abs(d).toFixed(1) + ' pts vs ' + label + '.';
+    })();
 
     const tr = SQ.trust();
     const trust = {
@@ -119,8 +128,6 @@ class Component extends DCLogic {
     })));
 
     const nOthers = rows.length;
-    const infoOpen = !!this.state.infoOpen;
-    const toggleInfo = () => this.setState({ infoOpen: !infoOpen });
 
     // ---- combo-scope banner and explicit side-by-side comparison mode ----
     const comboN = sc.persona === 'all' || sc.persona === 'unregistered' ? 1 : sc.persona.split('+').length;
@@ -137,14 +144,16 @@ class Component extends DCLogic {
       comparisonAction: comparisonMode ? 'Exit comparison mode' : 'Comparison mode',
       toggleComparison: () => { SQ.state.personaComparisonMode = !comparisonMode; SQ.redraw(); },
       viewTopOnly: () => SQ.setScope({ persona: topPersonaId || (topWho.toLowerCase().includes('all users') ? 'all' : sc.persona) }),
-      infoOpen, infoStr: infoOpen ? 'true' : 'false', toggleInfo,
       period: period[0], periodLower: period[1],
       hasTop: !!top, empty: !top, top,
       calmSub: (sc.persona === 'all' ? 'All users' : SQ.personaLabel(sc.persona)) + ', ' + SQ.RANGES[sc.range].label.toLowerCase() + ': ' + view.insight_ids.length + ' finding' + (view.insight_ids.length === 1 ? '' : 's') + ' checked, none is a problem.',
-      kpis, trust,
+      kpis, trust, trendNote, hasTrendNote: !!trendNote,
       showOthers: !!top, hasOthers: nOthers > 0, noOthers: nOthers === 0, rows,
       otherTitle: nOthers === 1 ? 'Other problem' : 'Other problems',
-      exits, checked, hasChecked: checked.length > 0, noChecked: checked.length === 0
+      exits, checked, hasChecked: checked.length > 0, noChecked: checked.length === 0,
+      ticketModalOpen: !!SQ.state.ticketModalOpen,
+      closeTicketModal: () => SQ.closeTicketModal(),
+      stopModal: (e) => e.stopPropagation()
     };
   }
 }

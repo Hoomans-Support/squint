@@ -13,7 +13,7 @@
   }
 </style>
 <div class="sq-root5" style="position: relative; min-height: 1000px; overflow: hidden; font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px; color: #202124">
-  <div class="sq-noprint" aria-hidden="true" style="position: absolute; inset: 0; z-index: 1"><dc-import name="Ask" hint-size="100%,1400px"></dc-import></div>
+  <div class="sq-noprint" aria-hidden="true" style="position: absolute; inset: 0; z-index: 1"><dc-import name="ChatNow" hint-size="100%,1400px"></dc-import></div>
   <div class="sq-noprint" aria-hidden="true" style="position: absolute; inset: 0; z-index: 2; background: rgba(32,33,36,.45)"></div>
 
   <div class="sq-noprint" role="dialog" aria-modal="true" aria-labelledby="exp-title" style="position: relative; z-index: 3; margin: 72px auto 0; width: min(1040px, calc(100% - 32px)); box-sizing: border-box; background: #FFFFFF; border-radius: 28px; box-shadow: 0 4px 8px 3px rgba(60,64,67,.15), 0 1px 3px rgba(60,64,67,.3); display: flex; flex-direction: column">
@@ -21,7 +21,7 @@
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
       <h2 id="exp-title" style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 400; flex: 1">Export as slides</h2>
       <span class="cap">{{deckLabel}}</span>
-      <a href="Ask.dc.html" aria-label="Close" style="width: 40px; height: 40px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; color: #5F6368"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+      <a href="ChatNow.dc.html" aria-label="Close" style="width: 40px; height: 40px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; color: #5F6368"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
     </div>
 
     <div style="display: flex; flex-wrap: wrap; gap: 24px; padding: 12px 28px 20px">
@@ -29,19 +29,21 @@
       <div style="flex: 0 1 260px; display: flex; flex-direction: column; gap: 4px">
         <span class="lbl" style="padding: 0 8px 6px">Slides · tick the ones to export</span>
         <template data-sc="for" list="{{slides}}" as="s" hint-placeholder-count="4">
-          <button type="button" class="slide" onClick="{{s.pick}}" style="{{s.style}}" aria-pressed="{{s.on}}">
-            <span class="num cap" style="width: 14px">{{s.n}}</span>
-            <span class="thumb" aria-hidden="true">
-              <span class="sqa-bar" style="height: 5px; width: 70%; background: {{s.accent}}"></span>
-              <span class="sqa-bar" style="height: 3px; width: 50%"></span>
-              <span style="flex: 1; display: flex; gap: 3px; align-items: flex-end"><span class="sqa-bar" style="width: 30%; height: 70%; background: {{s.chart}}"></span><span class="sqa-bar" style="width: 30%; height: 30%"></span><span class="sqa-bar" style="width: 30%; height: 25%"></span></span>
-            </span>
-            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
-              <span style="font-weight: 500">{{s.title}}</span>
-              <span class="cap">{{s.kind}}</span>
-            </span>
-            <input type="checkbox" checked="{{s.include}}" onChange="{{s.toggle}}" aria-label="Include slide {{s.n}}" style="width: 18px; height: 18px; accent-color: #1A73E8; margin: 0">
-          </button>
+          <div class="slide" style="{{s.style}}">
+            <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: inherit; border: 0; background: transparent; padding: 0; font: inherit; text-align: left; color: inherit; cursor: pointer">
+              <span class="num cap" style="width: 14px">{{s.n}}</span>
+              <span class="thumb" aria-hidden="true">
+                <span class="sqa-bar" style="height: 5px; width: 70%; background: {{s.accent}}"></span>
+                <span class="sqa-bar" style="height: 3px; width: 50%"></span>
+                <span style="flex: 1; display: flex; gap: 3px; align-items: flex-end"><span class="sqa-bar" style="width: 30%; height: 70%; background: {{s.chart}}"></span><span class="sqa-bar" style="width: 30%; height: 30%"></span><span class="sqa-bar" style="width: 30%; height: 25%"></span></span>
+              </span>
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-weight: 500">{{s.title}}</span>
+                <span class="cap">{{s.kind}}</span>
+              </span>
+            </button>
+            <input type="checkbox" checked="{{s.include}}" onChange="{{s.toggle}}" aria-label="Include slide {{s.n}}" style="width: 18px; height: 18px; accent-color: #1A73E8; margin: 0; flex: none">
+          </div>
         </template>
       </div>
 
@@ -86,7 +88,7 @@
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 24px 20px 28px; border-top: 1px solid #E8EAED">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B06000" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
       <span style="flex: 1 1 320px; font-size: 13px; color: #3C4043">{{footNote}}</span>
-      <a class="btn btn-text" href="Ask.dc.html">Cancel</a>
+      <a class="btn btn-text" href="ChatNow.dc.html">Cancel</a>
       <button type="button" class="btn btn-filled" onClick="{{doExport}}" disabled="{{noneOn}}">{{exportLabel}}</button>
     </div>
   </div>

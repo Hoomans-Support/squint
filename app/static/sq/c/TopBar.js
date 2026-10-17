@@ -4,7 +4,7 @@ class Component extends DCLogic {
     const menu = SQ.state.menu;
     const m = SQ.data.meta;
     const dateRange = (a, b) => new Date(a).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' - ' + new Date(b).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const goAsk = () => { SQ.state.menu = null; if (location.hash !== '#Ask') SQ.go('Ask'); };
+    const goAsk = () => { SQ.state.menu = null; if (location.hash !== '#ChatNow') SQ.go('ChatNow'); };
     const crit = SQ.problems().filter((p) => p.severity === 'critical').length;
     const workspaceKey = 'sq.workspaces';
     const activeWorkspaceKey = 'sq.activeWorkspace';
@@ -29,9 +29,6 @@ class Component extends DCLogic {
       workspaceOpen: menu === 'workspace',
       workspaces: workspaceOptions,
       toggleWorkspace: () => SQ.openMenu('workspace'),
-      createRequested: !!this.state.createRequested,
-      createLabel: this.state.createRequested ? 'Ping us to unlock' : 'Create workspace',
-      createWorkspace: () => this.setState({ createRequested: true }),
       helpOpen: menu === 'help',
       datasetLine: SQ.fmt(m.counts.users) + ' users, ' + SQ.fmt(m.counts.sessions) + ' sessions, ' + dateRange(m.window.start, m.window.end) + ', a simulated wallet app',
       valueAssumption: m.value_assumption,

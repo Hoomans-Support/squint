@@ -6,7 +6,7 @@ class Component extends DCLogic {
     const submit = (text) => { if (String(text || '').trim()) A.ask(text); };
     const link = (fn) => (e) => { if (e && e.preventDefault) e.preventDefault(); fn(); };
     const day = (t) => { const d = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(t).setHours(0, 0, 0, 0)) / 864e5); return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : d + ' days ago'; };
-    const hist = A.threads().slice(0, 3).map((t) => { const c = A.threadChip(t); return { title: t.title, scope: c.scope, problem: c.problem, hasProblem: !!c.problem, when: day(t.at), open: link(() => { A.open(t.id); SQ.go('Ask'); }) }; });
+    const hist = A.threads().slice(0, 3).map((t) => { const c = A.threadChip(t); return { title: t.title, scope: c.scope, problem: c.problem, hasProblem: !!c.problem, when: day(t.at), open: link(() => { A.open(t.id); SQ.go('ChatNow'); }) }; });
     const top = SQ.problems()[0];
     const from = A.fromLabel();
     return {

@@ -1,6 +1,6 @@
 SQ.define("SessionPlayer", function (DCLogic) {
 class Component extends DCLogic {
-  constructor() { super(); this.state = { sel: 0, at: 0, playing: false, speed: 4, more: false, infoOpen: false }; this.__timer = null; }
+  constructor() { super(); this.state = { sel: 0, at: 0, playing: false, speed: 4, more: false }; this.__timer = null; }
   stop() { if (this.__timer) { clearInterval(this.__timer); this.__timer = null; } }
   renderVals() {
     const pid = this.props.pid;
@@ -11,6 +11,11 @@ class Component extends DCLogic {
     const i = SQ.pickInsight('watchInsight');
     const W = i ? SQ.watchFor(i.id) : null;
     const sessions = (W && W.sessions) || [];
+    if (this.__wantSession === undefined) {
+      this.__wantSession = true;
+      const wantId = SQ.state.watchSessionId; delete SQ.state.watchSessionId;
+      if (wantId) { const idx = sessions.findIndex((s) => s.id === wantId); if (idx >= 0) this.state.sel = idx; }
+    }
     const rec = i ? SQ.problemRec(i) : null;
     const footer = (SQ.data.watch || {}).footer || 'Rebuilt from tracked events, inputs masked, no video';
     const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -107,9 +112,7 @@ class Component extends DCLogic {
     const speeds = [4, 8, 16].map((v) => ({ label: (v / 4) + '×', on: this.state.speed === v ? 'true' : 'false', fk: 'sp-speed-' + v, style: this.state.speed === v ? 'background: #E8F0FE; color: #174EA6; border-color: #1A73E8;' : '', set: () => upd({ speed: v }) }));
     const when = S.start_utc ? new Date(S.start_utc).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) + ' UTC' : 'n/a';
     const playing = !!this.state.playing && !reduced;
-    const infoOpen = !!this.state.infoOpen;
     return {
-      infoOpen, infoStr: infoOpen ? 'true' : 'false', toggleInfo: () => upd({ infoOpen: !infoOpen }),
       empty: false, has: true, head, back, rows, hidden, hasHidden: hidden > 0, moreText: 'Show ' + hidden + ' more', showMore: () => upd({ more: true }),
       shown: vis.length, total: sessions.length,
       s: { n: sel + 1, persona: S.persona, device: S.device, product: S.product || '', outcome: o[0], outBg: o[1], outFg: o[2], when, durTxt: SQ.fmtT(dur), atTxt: SQ.fmtT(at), atStep: screenName,

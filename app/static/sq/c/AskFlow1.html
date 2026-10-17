@@ -21,7 +21,7 @@
 
       <div role="listbox" aria-label="Ask or open a past question" style="position: absolute; left: 0; right: 0; top: 48px; background: #FFFFFF; border-radius: 0 0 24px 24px; box-shadow: 0 4px 6px 2px rgba(60,64,67,.15), 0 2px 2px rgba(60,64,67,.3); padding: 0 0 12px; border-top: 1px solid #E8EAED">
         <template data-sc="if" value="{{hasQ}}" hint-placeholder-val="{{ true }}">
-        <a class="sqa-opt" href="Ask.dc.html" onClick="{{goLink}}" role="option" aria-selected="true" style="background: #F1F3F4">
+        <a class="sqa-opt" href="ChatNow.dc.html" onClick="{{goLink}}" role="option" aria-selected="true" style="background: #F1F3F4">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true" class="sq-sparkle"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg>
           <span style="flex: 1; min-width: 0; overflow-wrap: anywhere"><span style="font-weight: 500">Ask Squint:</span> “{{q}}”</span>
           <kbd>Enter</kbd>
@@ -35,7 +35,7 @@
         <template data-sc="if" value="{{hasHist}}" hint-placeholder-val="{{ true }}">
         <div class="sqa-sec">From your history</div>
         <template data-sc="for" list="{{hist}}" as="h" hint-placeholder-count="2">
-        <a class="sqa-opt" href="Ask.dc.html" onClick="{{h.open}}" role="option" aria-selected="false">
+        <a class="sqa-opt" href="ChatNow.dc.html" onClick="{{h.open}}" role="option" aria-selected="false">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
           <span style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px">{{h.title}} <span class="mini" style="background: #F1F3F4; color: #3C4043">{{h.scope}}</span><template data-sc="if" value="{{h.hasProblem}}" hint-placeholder-val="{{ false }}"><span class="mini" style="background: #FCE8E6; color: #C5221F">{{h.problem}}</span></template></span>
           <span class="cap">{{h.when}}</span>
@@ -44,7 +44,7 @@
         </template>
         <div class="sqa-sec">Suggested</div>
         <template data-sc="for" list="{{suggest}}" as="x" hint-placeholder-count="2">
-        <a class="sqa-opt" href="Ask.dc.html" onClick="{{x.go}}" role="option" aria-selected="false">
+        <a class="sqa-opt" href="ChatNow.dc.html" onClick="{{x.go}}" role="option" aria-selected="false">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true" class="sq-sparkle"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg>
           <span style="flex: 1">{{x.q}}</span>
         </a>

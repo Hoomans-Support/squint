@@ -70,6 +70,9 @@
   const isAi = (i) => ['gemini', 'cached'].indexOf((i.diagnosis || {}).source) >= 0;
   SQ.diagTag = (i) => (isAi(i) ? { cls: 'tag tag-ai', text: 'AI' } : { cls: 'tag', text: 'Calculated' });
 
+  /* which team a finding's ticket would go to, inferred from its class (no real ticketing backend exists) */
+  SQ.ownerOf = (i) => (i.class === 'ux_friction' ? 'Design' : /technical/.test(i.class || '') ? 'Engineering' : 'Product');
+
   /* the first fact behind a diagnosis, built from measured stats (Calculated) */
   SQ.topFact = (i) => {
     const g = ((i.evidence_stats || {}).group) || {};

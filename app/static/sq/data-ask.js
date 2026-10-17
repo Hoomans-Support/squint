@@ -69,12 +69,12 @@
   A.fromRoute = (location.hash || '').replace(/^#/, '');
   window.addEventListener('hashchange', () => {
     const next = decodeURIComponent((location.hash || '').replace(/^#/, ''));
-    if (!/^(Ask|AskFlow\d)$/.test(next) && next) A.fromRoute = next;
+    if (!/^(ChatNow|AskFlow\d)$/.test(next) && next) A.fromRoute = next;
   });
   A.fromLabel = () => {
     if (SQ.state.askContext) return String(SQ.state.askContext);
     const r = A.fromRoute;
-    if (!r || /^(Ask|AskFlow\d)$/.test(r)) return '';
+    if (!r || /^(ChatNow|AskFlow\d)$/.test(r)) return '';
     return SQ.titles[r] || '';
   };
   A.fromHref = () => { const r = A.fromRoute; return r && SQ.titles[r] ? (r === 'FlowPrototype' ? 'Journeys.dc.html' : r + '.dc.html') : ''; };
@@ -126,7 +126,7 @@
     const turn = { q, eid: entry ? entry.id : null, at: Date.now(), pending: true, step: 0, from: opts.from || '', liveSettled: !!entry };
     let th = opts.fresh ? null : A.cur();
     if (!th) {
-      th = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: entry ? entry.question : cap1(q), at: Date.now(), pinned: false, turns: [], from: opts.from || A.fromLabel() };
+      th = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: entry ? entry.question : cap1(q), at: Date.now(), turns: [], from: opts.from || A.fromLabel() };
       threads.push(th);
       A.curId = th.id;
       turn.from = th.from || '';
@@ -164,9 +164,7 @@
   };
   A.newThread = () => { A.curId = null; A.menu = false; A.draft = ''; SQ.redraw(); A.focus('ask-follow'); };
   A.open = (id) => { A.curId = id; A.menu = false; SQ.redraw(); };
-  A.togglePin = (th) => { th.pinned = !th.pinned; A.menu = false; save(); SQ.redraw(); };
   A.remove = (th) => { threads = threads.filter((x) => x !== th); if (A.curId === th.id) A.curId = null; A.menu = false; save(); SQ.redraw(); };
-  A.clearAll = () => { threads = []; A.curId = null; A.menu = false; A.historyMenu = false; save(); SQ.redraw(); };
   A.focus = (id, end) => setTimeout(() => { const el = document.getElementById(id); if (el) { el.focus(); if (end && el.setSelectionRange) { const n = el.value.length; el.setSelectionRange(n, n); } } }, 30);
 
   /* The top-bar question. The top bar keeps its draft text in SQ.state.askQuestion on every keystroke, so a draft must not be taken as a
@@ -184,7 +182,7 @@
     if (q) A.submit(q, { fresh: true, from: A.fromLabel() });
   };
   /* for other pages: A.ask('question') opens Ask and answers it */
-  A.ask = (q) => { SQ.state.askQuestion = String(q || '').trim(); A.topSubmit = true; if (/^#Ask$/.test(location.hash)) SQ.redraw(); else SQ.go('Ask'); };
+  A.ask = (q) => { SQ.state.askQuestion = String(q || '').trim(); A.topSubmit = true; if (/^#ChatNow$/.test(location.hash)) SQ.redraw(); else SQ.go('ChatNow'); };
 
   A.copy = (text, key) => {
     const done = () => { A.copied = key; SQ.redraw(); setTimeout(() => { if (A.copied === key) { A.copied = ''; SQ.redraw(); } }, 1800); };
@@ -323,7 +321,6 @@
   };
 
   A.textOf = (m) => [m.headText, m.text, m.isIns && m.big ? 'Evidence: ' + m.big + ' ' + m.evText : '', ...m.drivers.map((d) => d.label + ': ' + d.vals), ...m.bars.map((b) => b.name + ': ' + b.v + (b.n ? ' (' + b.n + ')' : '')), ...m.stats.map((s) => s.label + ': ' + s.v), '', 'Sample data (synthetic), data up to ' + SQ.asOf() + '.'].filter((x) => x !== '' || true).join('\n').replace(/\n{3,}/g, '\n\n');
-  A.threadText = (th) => [th.title, ''].concat(...th.turns.filter((u) => !u.pending).map((u) => { const e = u.eid && A.entry(u.eid); return ['Q: ' + u.q, e ? A.textOf(A.model(e)) : REFUSAL_HEAD + '. ' + REFUSAL_TEXT, '']; })).join('\n');
 
   /* ---------- the conversation, for the page ---------- */
   A.suggestions = (th) => {
@@ -337,8 +334,8 @@
     const list = A.threads().filter((t) => !q || t.title.toLowerCase().includes(q) || t.turns.some((u) => u.q.toLowerCase().includes(q)));
     const today = dayStart(Date.now());
     const label = (t) => { const d = Math.round((today - dayStart(t.at)) / 864e5); return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : d <= 7 ? 'Last 7 days' : 'Earlier'; };
-    const order = ['Pinned', 'Today', 'Yesterday', 'Last 7 days', 'Earlier'], map = {};
-    list.forEach((t) => { const k = t.pinned ? 'Pinned' : label(t); (map[k] = map[k] || []).push(t); });
+    const order = ['Today', 'Yesterday', 'Last 7 days', 'Earlier'], map = {};
+    list.forEach((t) => { const k = label(t); (map[k] = map[k] || []).push(t); });
     return order.filter((k) => map[k]).map((k) => ({ label: k, items: map[k] }));
   };
   A.threadChip = (th) => {
@@ -462,10 +459,9 @@
       { label: 'Value at risk', value: risk ? SQ.money(risk.value) + '/wk' : 'n/a', note: rd.t, nc: rd.c },
       { label: 'Open problems', value: String(P.length), note: crit + ' critical \u00b7 ' + warn + ' warning', nc: '#5F6368' }
     ].map((n, i) => ({ ...n, style: i < 2 ? 'padding: 16px 20px; border-right: 1px solid #E8EAED' : 'padding: 16px 20px', noteStyle: 'font-size: 12px; color: ' + n.nc }));
-    const owner = (i) => (i.class === 'ux_friction' ? 'Design' : /technical/.test(i.class) ? 'Engineering' : 'Product');
     const item = (i, n) => {
       const h = A.headline(i), money = i.impact && i.impact.per_week_value > 0 ? ' About ' + SQ.money(i.impact.per_week_value) + ' a week.' : '';
-      return { id: i.id, n, headA: h.a, headB: h.b, headC: h.c, ctx: h.ctx, hasCtx: !!h.ctx, owner: owner(i), why: ((i.facts || [])[0] || firstSentence((i.diagnosis || {}).summary)) + money, text: h.text };
+      return { id: i.id, n, headA: h.a, headB: h.b, headC: h.c, ctx: h.ctx, hasCtx: !!h.ctx, owner: SQ.ownerOf(i), why: ((i.facts || [])[0] || firstSentence((i.diagnosis || {}).summary)) + money, text: h.text };
     };
     const todo = P.slice(0, 3).map((i, k) => item(i, k + 1));
     const keep = (v.insight_ids || []).map((id) => SQ.insight(id)).filter((i) => i && i.severity === 'healthy').slice(0, 2).map((i, k) => item(i, k + 1));

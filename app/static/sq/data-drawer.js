@@ -28,8 +28,24 @@
     if (SQ.state.returnFocusFk) { SQ.state.pendingRefocus = SQ.state.returnFocusFk; delete SQ.state.returnFocusFk; }
     SQ.go(route);
   };
-  SQ.closeDrawer = () => returnHome(SQ.state.drawerFrom || 'Main');
-  SQ.closeWatch = () => returnHome(SQ.state.watchFrom || SQ.state.drawerFrom || 'Main');
+  SQ.closeDrawer = () => returnHome(SQ.state.drawerFrom || 'Overview');
+  SQ.closeWatch = () => returnHome(SQ.state.watchFrom || SQ.state.drawerFrom || 'Overview');
+
+  /* ---------- the ticket popup: opens over the current page, no route change ---------- */
+  SQ.openTicketModal = (id) => {
+    if (SQ.state.ticketModalOpen) { SQ.state.returnFocusFk = null; }
+    else { const a = document.activeElement; SQ.state.returnFocusFk = a && a.getAttribute ? a.getAttribute('data-fk') : null; }
+    if (id) SQ.state.drawerInsight = id;
+    SQ.state.ticketOpen = false;
+    SQ.state.ticketModalOpen = true;
+    SQ.redraw();
+  };
+  SQ.closeTicketModal = () => {
+    SQ.state.ticketModalOpen = false;
+    SQ.state.ticketOpen = false;
+    SQ.redraw();
+    if (SQ.state.returnFocusFk) { const fk = SQ.state.returnFocusFk; delete SQ.state.returnFocusFk; SQ.refocus(fk); }
+  };
 
   /* keep keyboard focus on the same control across a re-render (a render replaces the DOM) */
   SQ.keepFocus = (fn) => {
@@ -189,6 +205,10 @@
     if (e.key !== 'Escape' || e.defaultPrevented) return;
     const r = routeOf(location.hash);
     if (SQ.state.menu != null) return;
+    if (SQ.state.ticketModalOpen) {
+      if (SQ.state.ticketOpen) { SQ.state.ticketOpen = false; SQ.redraw(); SQ.refocus('pd-ticket'); } else SQ.closeTicketModal();
+      return;
+    }
     if (DRAWER.test(r)) {
       if (SQ.state.ticketOpen) { SQ.state.ticketOpen = false; SQ.redraw(); SQ.refocus('pd-ticket'); } else SQ.closeDrawer();
     } else if (WATCH.test(r)) SQ.closeWatch();
@@ -217,4 +237,15 @@
   SQ.watchOut = (o) => OUT[o] || [o, '#F1F3F4', '#3C4043'];
   SQ.watchDot = (p) => PERSONA_DOT[p] || '#9AA0A6';
   SQ.fmtT = fmtT;
+
+  /* up to n sample sessions for a finding's ticket, one line each: time, device, outcome */
+  SQ.sessionSummaries = (i, n) => {
+    const w = SQ.watchFor(i.id);
+    const sessions = (w && w.sessions) || [];
+    return sessions.slice(0, n || 3).map((s) => {
+      const when = s.start_utc ? new Date(s.start_utc).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' }) : 'n/a';
+      const o = SQ.watchOut(s.outcome);
+      return { id: s.id, label: when + ' · ' + (s.device || s.persona || 'n/a') + ' · ' + o[0] };
+    });
+  };
 })();

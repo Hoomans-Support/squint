@@ -1,7 +1,6 @@
 SQ.define("Journeys", function (DCLogic) {
 class Component extends DCLogic {
   renderVals() {
-    setTimeout(() => SQ.animateCounts('.sq-count'), 180);
     const fmt = (n) => SQ.fmt(n);
     const confBars = (n) => [1, 2, 3].map((i) => (i <= n ? '#1A73E8' : '#DADCE0'));
     const sevDot = { Critical: '#D93025', Warning: '#F9AB00', Watch: '#BDC1C6', 'Data gap': '#F9AB00', Segment: '#1A73E8', 'Blind spot': '#1A73E8' };
@@ -29,7 +28,7 @@ class Component extends DCLogic {
     }
     const jid = MODEL.byId[this.state.journey] ? this.state.journey : MODEL.defaultId;
     const JD = MODEL.byId[jid];
-    const PLACEHOLDER = { key: 'none', kind: 'watch', type: 'Watch', chip: 'Nothing flagged', action: 'Nothing to fix', item: 'in this scope', who: 'these users', ctx: '', short: 'Nothing flagged', step: 0, metric: 'exit', value: '', unit: '', share: '', conf: 1, signal: '', vs: '', vis: 'step', stats: [], whyLabel: 'Why', whyTag: 'Calculated', why: 'No step has enough sessions in this scope to flag anything.', primary: 'Ask a question', route: 'Ask', hasWatch: false, whoMeasure: 'exit rate here', whoTick: null, whoVals: [], whoMax: 10 };
+    const PLACEHOLDER = { key: 'none', kind: 'watch', type: 'Watch', chip: 'Nothing flagged', action: 'Nothing to fix', item: 'in this scope', who: 'these users', ctx: '', short: 'Nothing flagged', step: 0, metric: 'exit', value: '', unit: '', share: '', conf: 1, signal: '', vs: '', vis: 'step', stats: [], whyLabel: 'Why', whyTag: 'Calculated', why: 'No step has enough sessions in this scope to flag anything.', primary: 'Ask a question', route: 'ChatNow', hasWatch: false, whoMeasure: 'exit rate here', whoTick: null, whoVals: [], whoMax: 10 };
     const ISSUES = JD.issues.length ? JD.issues : [PLACEHOLDER];
     const found = ISSUES.findIndex((x) => x.key === this.state.curKey);
     const cur = found >= 0 ? found : 0;
@@ -81,11 +80,30 @@ class Component extends DCLogic {
       hasStats: I.stats.length > 0,
       whyLabel: I.whyLabel, whyTag: I.whyTag, why: I.why,
       whyTagStyle: I.whyTag === 'Calculated' ? '' : 'background: #E8F0FE; color: #174EA6',
+      whyIsAI: I.whyTag === 'AI' || I.whyTag === 'AI · low confidence', whyNotAI: I.whyTag !== 'AI' && I.whyTag !== 'AI · low confidence',
+      whyLowConf: I.whyTag === 'AI · low confidence',
       hasWho: (I.whoVals || []).length > 0 && I.whoTick != null, whoMeasure: I.whoMeasure, whoTick: I.whoTick != null ? I.whoTick.toFixed(1) + '%' : '',
       tickPos: I.whoTick != null ? Math.min(100, I.whoTick / I.whoMax * 100).toFixed(1) + '%' : '0%', whoRows,
-      primary: I.primary, hasWatch: !!I.hasWatch,
-      openPrimary: () => { if (I.route === 'ProblemDetail' && I.insightId) SQ.state.drawerInsight = I.insightId; SQ.go(I.route); },
-      openWatch: () => { SQ.state.watchInsight = I.insightId; SQ.go('SessionPlayer'); }
+      primary: I.primary, primaryIsDraft: I.route === 'ProblemDetail',
+      openPrimary: () => { if (I.route === 'ProblemDetail') SQ.openTicketModal(I.insightId); else SQ.go(I.route); }
+    };
+
+    // ---- "Biggest leak in this journey" link: why-trust popup and a quick-action menu, both about ISSUES[0]
+    //      specifically (the overall top issue), regardless of which issue is currently selected above ----
+    const top0 = ISSUES[0];
+    const topHasAction = !!top0.insightId;
+    const topMenuOpen = !!this.state.topMenuOpen;
+    const topTrustOpen = !!this.state.topTrustOpen;
+    const topConfLabel = ['', 'Low', 'Medium', 'High'][top0.conf] || 'Low';
+    const topActions = {
+      topHasAction, topMenuOpen, topMenuStr: topMenuOpen ? 'true' : 'false', toggleTopMenu: () => upd({ topMenuOpen: !topMenuOpen }),
+      topTrustOpen, topTrustStr: topTrustOpen ? 'true' : 'false', toggleTopTrust: () => upd({ topTrustOpen: !topTrustOpen }), closeTopTrust: () => upd({ topTrustOpen: false }),
+      stop: (e) => e.stopPropagation(),
+      topConfLabel, topWhyTag: top0.whyTag, topWhy: top0.why, topEvidence: (top0.stats[0] || {}).sub || '',
+      topHasWatch: !!top0.hasWatch,
+      topWatch: () => { SQ.state.watchInsight = top0.insightId; upd({ topMenuOpen: false }); SQ.go('SessionPlayer'); },
+      topDraft: () => { upd({ topMenuOpen: false }); SQ.openTicketModal(top0.insightId); },
+      topMarkFixed: () => { SQ.markFixed(top0.insightId); upd({ topMenuOpen: false }); }
     };
 
     // phone screen drawn for the focused step; glows come from measured rage-tap spots
@@ -314,8 +332,10 @@ class Component extends DCLogic {
     const metrics = Object.keys(META).map((k) => ({ label: META[k].label, sel: metric === k ? 'true' : 'false', fk: 'metric-' + k, style: metric === k ? on : '', pick: () => upd({ metric: k }) }));
     const more = ISSUES.length - 4;
 
-    // ---------- Transaction completion by product (whole sample) ----------
-    const PC = SQ.productCompletion();
+    // ---------- Transaction completion, by product / device / app version (whole sample) ----------
+    const PC_DIMS = { product: ['product_funnels', 'Product'], device: ['device_funnels', 'Device'], version: ['app_version_funnels', 'App version'] };
+    const pcDim = PC_DIMS[this.state.pcDim] ? this.state.pcDim : 'product';
+    const PC = SQ.dimCompletion(PC_DIMS[pcDim][0]);
     const CAUSEWHY = { technical: 'after an error or a tap that did nothing', language: 'stuck on the wording', ux: 'after going back a step', natural: 'mostly browsing' };
     const products = PC.rows.map((r) => {
       const pct = r.completion * 100;
@@ -326,16 +346,15 @@ class Component extends DCLogic {
         color: low ? '#D93025' : '#8AB4F8', pctStyle: low ? 'font-weight: 500; color: #C5221F' : ''
       };
     });
+    const pcTabs = Object.keys(PC_DIMS).filter((k) => k === 'product' || Object.keys(SQ.data[PC_DIMS[k][0]] || {}).length > 0)
+      .map((k) => ({ label: PC_DIMS[k][1], sel: k === pcDim, style: k === pcDim ? on : '', pick: () => upd({ pcDim: k }) }));
 
     const crumb = this.state.from ? ' · opened from ' + this.state.from : '';
-    const infoFlowOpen = !!this.state.infoFlowOpen, infoLoopsOpen = !!this.state.infoLoopsOpen;
 
     return {
-      infoFlowOpen, infoFlowStr: infoFlowOpen ? 'true' : 'false', toggleInfoFlow: () => upd({ infoFlowOpen: !infoFlowOpen }),
-      infoLoopsOpen, infoLoopsStr: infoLoopsOpen ? 'true' : 'false', toggleInfoLoops: () => upd({ infoLoopsOpen: !infoLoopsOpen }),
       jtabs, crumb, keepText: JD.keepText, hasKeep: !!JD.keepText, topName: ISSUES[0].short,
       cols: `repeat(${nSteps}, minmax(0, 1fr))`, hasBypass, arcsAria, good,
-      strip, issues, hero, vis, replay,
+      strip, issues, hero, vis, replay, ...topActions,
       formFields: ['38%', '46%', '30%', '52%'], formFields3: ['42%', '56%', '34%'],
       extraSel: cur >= 4, listOpen, listOpenStr: listOpen ? 'true' : 'false',
       moreLabel: listOpen ? 'Hide list' : (more > 0 ? `+${more} more` : 'See as list'),
@@ -353,7 +372,13 @@ class Component extends DCLogic {
       loopsNote: `${fmt(loopTotal)} backward moves, ${SQ.RANGES[SQ.scope.range].short.toLowerCase()}`,
       metrics, grid, metricName: M.name, personaCols: JD.personaCols.map((label) => ({ label })), hasGrid: grid.length > 0,
       isCompareMode: JD.isCompareMode, notCompareMode: !JD.isCompareMode, compareNames: SQ.personaLabel(SQ.scope.persona),
-      products, productNote: 'Counted over the whole sample, not filtered by the scope bar. Red marks products 9.5 points or more below the average of ' + (PC.avg * 100).toFixed(0) + '%.'
+      products, pcTabs, pcDimLabel: PC_DIMS[pcDim][1].toLowerCase(),
+      pcOpen: !!this.state.pcOpen, pcToggle: (e) => { this.state.pcOpen = e.target.open; },
+      stopPcInfo: (e) => { e.preventDefault(); e.stopPropagation(); },
+      productNote: 'Counted over the whole sample, not filtered by the scope bar. Red marks ' + PC_DIMS[pcDim][1].toLowerCase() + ' rows 9.5 points or more below the average of ' + (PC.avg * 100).toFixed(0) + '%.',
+      ticketModalOpen: !!SQ.state.ticketModalOpen,
+      closeTicketModal: () => SQ.closeTicketModal(),
+      stopModal: (e) => e.stopPropagation()
     };
   }
 }

@@ -13,6 +13,19 @@ body { font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-s
 .ds-context > [role="note"] { position: absolute; top: 26px; left: 0; z-index: 30; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; border: 1px solid #DADCE0; border-radius: 8px; background: #FFFFFF; color: #3C4043; font-size: 13px; line-height: 20px; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); }
 /* a closed <details>'s content can still contribute to the page's scroll width in Chromium (its native collapse does not reliably zero out horizontal layout for fixed-width descendants); force it out of layout explicitly on every details variant instead of relying on native collapse */
 details:not([open]) > :not(summary) { display: none !important; }
+/* Every "i" info circle opens on hover or keyboard focus, not only a click. For .ds-context (a native
+   <details>), this can't be pure CSS: a closed <details>'s non-summary content is kept out of the render
+   tree by the browser itself, not by a CSS `display` rule that author CSS can override (confirmed live -
+   not even an inline `display: block !important` on the note makes it paint while `open` is absent) - so
+   data.js toggles the real `open` attribute on pointerover/pointerout and focusin/focusout instead. */
+/* .sq-hover-info: the same hover/focus disclosure for info circles that are not a <details>, so each one
+   keeps its own existing popover position and width; the popover is always in the DOM, CSS-only show/hide.
+   `display: none` at rest (not visibility/opacity): one of these notes is a normal-flow block, not an
+   absolutely positioned popover, and visibility:hidden still reserves its box height, leaving a permanent
+   gap. A note that needs its own inline `display` (e.g. `display: flex` for a multi-paragraph layout) keeps
+   that on an inner wrapper div instead of the `[role="note"]` element itself, so this rule never fights it. */
+.sq-hover-info [role="note"] { display: none; }
+.sq-hover-info:hover [role="note"], .sq-hover-info:focus-within [role="note"] { display: block; }
 .ds-tables > summary { cursor: pointer; color: #1967D2; font-weight: 500; }
 .sq-back-arc-red { animation: sq-back-pulse 1.8s ease-in-out infinite; }
 @keyframes sq-back-pulse { 0%, 100% { opacity: .68; filter: drop-shadow(0 0 0 rgba(217,48,37,0)); } 50% { opacity: 1; filter: drop-shadow(0 0 5px rgba(217,48,37,.45)); } }
@@ -40,12 +53,27 @@ html[data-theme="dark"] { filter: invert(.90) hue-rotate(180deg) saturate(.82); 
 .sq-grow-y { opacity: 0; transform-origin: bottom; }
 .sq-grow-x.in-view, .track > *.in-view, .sqa-track > *.in-view { animation: sq-grow-x .6s cubic-bezier(.2,.8,.2,1) forwards; }
 .sq-grow-y.in-view { animation: sq-grow-y .6s cubic-bezier(.2,.8,.2,1) forwards; }
+/* A bar made of several colored segments (e.g. a multi-cause breakdown) reveals as one left-to-right sweep
+   over the whole row instead of each segment growing from its own edge: a clip-path on the row (not a
+   transform on each segment) keeps every segment's own width and color intact underneath. The resting state
+   hides with `opacity` only, same reason as above: a clip-path already inset to zero width at rest gives
+   IntersectionObserver a zero-area target, so it never reports intersecting and `.in-view` never arrives. The
+   clip-path only takes effect once the animation itself starts, after detection has already succeeded. */
+@keyframes sq-wipe { from { clip-path: inset(0 100% 0 0); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+.sq-wipe { opacity: 0; }
+.sq-wipe.in-view { animation: sq-wipe .6s cubic-bezier(.2,.8,.2,1) forwards; }
 @media (prefers-reduced-motion: reduce) {
-  .sq-grow-x, .sq-grow-y, .track > *, .sqa-track > * { opacity: 1; animation: none; }
+  .sq-grow-x, .sq-grow-y, .track > *, .sqa-track > *, .sq-wipe { opacity: 1; clip-path: none; animation: none; }
 }
 
 /* Keep formatted currency pairs such as PHP and USD together during count-up updates. */
 .sq-count { white-space: nowrap; }
+
+/* The finding drawer (ProblemDetail, opened as a modal) slides in from the right edge instead of
+   growing from the center, so it reads as a panel over the page rather than a floating dialog. */
+@keyframes sq-slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.sq-drawer-in { animation: sq-slide-in-right .28s cubic-bezier(.2,.8,.2,1); }
+@media (prefers-reduced-motion: reduce) { .sq-drawer-in { animation: none; } }
 /* ...except on the narrowest phones, where a long PHP+USD pair can run past the KPI tile; wrapping there beats a hidden horizontal scroll. */
 @media (max-width: 360px) { .sq-count { white-space: normal; overflow-wrap: break-word; } }
 
@@ -85,7 +113,10 @@ a:focus-visible .sq-sparkle, button:focus-visible .sq-sparkle, .sq-sparkle:focus
 .sq-workspace-note b { color: #3C4043; }
 .sq-workspace-create { border-top: 1px solid #E8EAED; border-radius: 0 0 8px 8px; color: #1967D2; font-weight: 500; }
 .sq-workspace-create > svg:last-child { color: #5F6368; }
-.sq-owner-pill { display: inline-flex; flex: 0 0 auto; align-items: center; padding: 4px 10px; border-radius: 999px; background: #F1F3F4; color: #3C4043; font-size: 11px; font-weight: 600; line-height: 16px; white-space: nowrap; }
+.sq-scroll { scrollbar-width: thin; scrollbar-color: #DADCE0 transparent; }
+.sq-scroll::-webkit-scrollbar { width: 8px; }
+.sq-scroll::-webkit-scrollbar-track { background: transparent; }
+.sq-scroll::-webkit-scrollbar-thumb { background: #DADCE0; border-radius: 4px; }
 .sq-settings-popover { line-height: 1.4; }
 .sq-settings-heading { display: flex; flex-direction: column; gap: 2px; padding-bottom: 12px; border-bottom: 1px solid #E8EAED; }
 .sq-settings-heading strong { color: #202124; font-size: 15px; font-weight: 600; }

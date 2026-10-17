@@ -12,7 +12,7 @@
         <section class="card" aria-labelledby="top" style="padding: 28px 32px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
           <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px; flex: 0 1 340px">
             <div style="display: flex; align-items: center; gap: 10px"><span class="num" style="font-size: 40px; line-height: 48px; color: #1A73E8">{{topPeople}}</span><span class="cap" style="font-size: 13px">people stalled at {{topScreen}}<br>in the synthetic sample</span></div>
-            <div style="display: flex; height: 20px; border-radius: 6px; overflow: hidden; gap: 2px" role="img" aria-label="Win-back outcomes from the synthetic sample"><template data-sc="for" list="{{topStates}}" as="s"><div class="sq-grow-x" style="width: {{s.width}}; background: {{s.color}}"></div></template></div>
+            <div class="sq-wipe" style="display: flex; height: 20px; border-radius: 6px; overflow: hidden; gap: 2px" role="img" aria-label="Win-back outcomes from the synthetic sample"><template data-sc="for" list="{{topStates}}" as="s"><div style="width: {{s.width}}; background: {{s.color}}"></div></template></div>
             <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; font-size: 13px"><template data-sc="for" list="{{topStates}}" as="s"><span class="dot" style="background: {{s.color}}"></span><span>{{s.label}}</span><span class="num">{{s.people}}</span></template></div>
             <figcaption><span class="chip" style="background: #E8F0FE; color: #174EA6">Calculated</span></figcaption>
           </figure>
@@ -24,17 +24,17 @@
         </section>
 
         <section aria-labelledby="more" style="display: flex; flex-direction: column; gap: 12px">
-          <div style="display: flex; align-items: center; gap: 6px; position: relative">
+          <div class="sq-hover-info" style="display: flex; align-items: center; gap: 6px; position: relative">
             <h2 id="more" class="h2" style="margin: 0">Other audiences</h2>
-            <button type="button" aria-label="What these cards mean" aria-expanded="{{infoStr}}" onclick="{{toggleInfo}}" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
-            <template data-sc="if" value="{{infoOpen}}" hint-placeholder-val="{{ false }}">
-              <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 320px; max-width: min(320px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043; display: flex; flex-direction: column; gap: 6px">
+            <button type="button" aria-label="What these cards mean" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
+            <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 320px; max-width: min(320px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043">
+              <div style="display: flex; flex-direction: column; gap: 6px">
                 <p style="margin: 0"><span class="chip" style="background: #E8F0FE; color: #174EA6">Win back</span> people who stalled or stopped buying, worth re-engaging.</p>
                 <p style="margin: 0"><span class="chip" style="background: #E8F0FE; color: #174EA6">Target</span> a group worth a promo or offer.</p>
                 <p style="margin: 0"><span class="chip" style="background: #E6F4EA; color: #137333">Keep</span> good behavior worth protecting from a known bug.</p>
                 <p style="margin: 0"><span class="chip" style="background: #F1F3F4; color: #3C4043">Protect</span> a risk pattern worth a safeguard.</p>
               </div>
-            </template>
+            </div>
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: start">
             <template data-sc="for" list="{{cardGroups}}" as="group">
@@ -58,7 +58,7 @@
           </div>
         </section>
 
-        <section class="card" aria-labelledby="mix" style="padding: 24px; display: flex; flex-direction: column; gap: 16px"><div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px"><h2 id="mix" class="h2" style="font-size: 16px">{{total}} active people, by behavior</h2><span class="cap">Context · calculated, synthetic sample</span></div><div style="display: flex; height: 16px; border-radius: 8px; overflow: hidden; gap: 2px" role="img" aria-label="Active people grouped by behavior"><template data-sc="for" list="{{segments}}" as="s"><div class="sq-grow-x" title="{{s.label}} {{s.share}}" style="width: {{s.width}}; background: {{s.color}}"></div></template></div><div style="display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px"><template data-sc="for" list="{{segments}}" as="s"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: {{s.color}}"></span>{{s.label}} <span class="num" style="font-weight: 500">{{s.share}}</span></span></template></div></section>
+        <section class="card" aria-labelledby="mix" style="padding: 24px; display: flex; flex-direction: column; gap: 16px"><div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px"><h2 id="mix" class="h2" style="font-size: 16px">{{total}} active people, by behavior</h2><span class="cap">Context · calculated, synthetic sample</span></div><div class="sq-wipe" style="display: flex; height: 16px; border-radius: 8px; overflow: hidden; gap: 2px" role="img" aria-label="Active people grouped by behavior"><template data-sc="for" list="{{segments}}" as="s"><div title="{{s.label}} {{s.share}}" style="width: {{s.width}}; background: {{s.color}}"></div></template></div><div style="display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px"><template data-sc="for" list="{{segments}}" as="s"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: {{s.color}}"></span>{{s.label}} <span class="num" style="font-weight: 500">{{s.share}}</span></span></template></div></section>
                 </template>
       </div>
     </main>

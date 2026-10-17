@@ -34,10 +34,11 @@
   }
   const camel = (s) => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
 
-  // Journeys links open the version where See why and Watch sessions slide in as overlays.
-  const ALIAS = { Journeys: 'FlowPrototype' };
+  // Historical name aliasing for "Name.dc.html" hrefs (kept as a hook; nothing uses it now that
+  // every authored Journeys link already names the real route directly).
+  const ALIAS = {};
   const instances = new Map();
-  let route = 'Main';
+  let route = 'Overview';
 
   function renderComponent(name, props, key) {
     const Cls = SQ.classes[name];
@@ -92,7 +93,7 @@
           if (typeof v === 'function') el.addEventListener(a.name.slice(2), (e) => { v(e); });
           continue;
         }
-        if (a.name === 'checked' || a.name === 'disabled' || a.name === 'selected') {
+        if (a.name === 'checked' || a.name === 'disabled' || a.name === 'selected' || a.name === 'open') {
           if (v === false || v === 'false' || v == null) continue;
           el.setAttribute(a.name, '');
           continue;
@@ -119,9 +120,14 @@
   }
   function go() {
     const h = decodeURIComponent(location.hash.replace(/^#/, ''));
-    const next = SQ.classes[h] ? h : (h ? null : 'Main');
-    if (next === null) return;   // an in-page anchor such as #signals
-    if (next !== route) { route = next; instances.clear(); window.scrollTo(0, 0); }
+    const next = SQ.classes[h] ? h : (h ? null : 'Overview');
+    // an in-page anchor such as #signals: not a route, so leave the current page alone, but the browser has
+    // already written it into the URL bar by the time we get here - put the real route's hash back (no new
+    // history entry, no re-render) instead of leaving a hash that looks like a broken/unknown page.
+    if (next === null) { history.replaceState(null, '', '#' + route); return; }
+    // a page-hosted popup (the ticket draft) belongs to the page that opened it; leaving that
+    // page by a real route change closes it instead of letting it reappear if the user returns.
+    if (next !== route) { route = next; instances.clear(); window.scrollTo(0, 0); SQ.state.ticketModalOpen = false; }
     draw();
     document.title = 'Squint · ' + (SQ.titles[route] || route);
     // a close control can ask to have focus returned to whatever opened it, once the new

@@ -771,6 +771,8 @@ def main():
         "overview": legacy["overview"],
         "filters": {"platforms": sorted({s["platform"] for s in all_s}), "personas": sorted(PERSONAS)},
         "product_funnels": product_funnels(clean),
+        "device_funnels": dimension_funnels(clean, "device_class", DEVICE_CLASS_LABELS),
+        "app_version_funnels": dimension_funnels(clean, "app_version", {}),
         "stuck_sessions": stuck,
         "hotspot": hotspots[0] if hotspots else None,
         "hotspots": hotspots,
@@ -1260,6 +1262,27 @@ def product_funnels(clean):
                          "exit_class": top_cls[0][0] if top_cls else None})   # additive: the usual reason people leave at this step
         out[p] = {"label": PRODUCT_LABELS[p], "sessions": len(g), "steps": rows,
                   "completion": round(sum(s["completed"] for s in g) / len(g), 4)}
+    return out
+
+
+def dimension_funnels(clean, dim_key, labels):
+    """Same shape as product_funnels, grouped by any other per-session dimension (device_class, app_version).
+    A session with no value for dim_key (e.g. app_version on a web session) is excluded from that dimension,
+    not shown as a fake "unknown" row."""
+    out = {}
+    tx = [s for s in clean if s["journey"] == "transaction" and s["persona"] != "fraudster" and s.get(dim_key)]
+    steps = UI_STEPS["transaction"]
+    for val in sorted({s[dim_key] for s in tx}):
+        g = [s for s in tx if s[dim_key] == val]
+        rows = []
+        for sid, scs, name in steps:
+            at = [s for s in g if any(sc in s["seen"] for sc in scs)]
+            ex = [s for s in at if s["last"] in scs and not s["completed"]]
+            top_cls = Counter(s["exit_class"] for s in ex).most_common(1)
+            rows.append({"id": sid, "name": name, "sessions": len(at), "exits": len(ex), "exit_rate": round(len(ex) / len(at), 4) if at else None,
+                         "exit_class": top_cls[0][0] if top_cls else None})
+        out[val] = {"label": labels.get(val, val), "sessions": len(g), "steps": rows,
+                    "completion": round(sum(s["completed"] for s in g) / len(g), 4)}
     return out
 
 

@@ -4,7 +4,7 @@
   "dataset_label": "Sample dataset (synthetic)",
   "synthetic": true,
   "schema": "ui-v3",
-  "generated_at": "2026-10-17T05:21:19Z",
+  "generated_at": "2026-10-17T11:20:02Z",
   "as_of": "2026-10-14",
   "window": {
    "start": "2026-09-15",
@@ -119395,6 +119395,244 @@
     }
    ],
    "completion": 0.8229
+  }
+ },
+ "device_funnels": {
+  "android_low": {
+   "label": "Android (low-end)",
+   "sessions": 5912,
+   "steps": [
+    {
+     "id": "product",
+     "name": "Choose product",
+     "sessions": 5906,
+     "exits": 291,
+     "exit_rate": 0.0493,
+     "exit_class": "natural"
+    },
+    {
+     "id": "details",
+     "name": "Details",
+     "sessions": 5616,
+     "exits": 366,
+     "exit_rate": 0.0652,
+     "exit_class": "natural"
+    },
+    {
+     "id": "confirm",
+     "name": "Checkout and PIN",
+     "sessions": 5250,
+     "exits": 418,
+     "exit_rate": 0.0796,
+     "exit_class": "natural"
+    },
+    {
+     "id": "done",
+     "name": "Transaction done",
+     "sessions": 4830,
+     "exits": 0,
+     "exit_rate": 0.0,
+     "exit_class": null
+    }
+   ],
+   "completion": 0.818
+  },
+  "android_mid": {
+   "label": "Android (mid/high)",
+   "sessions": 4925,
+   "steps": [
+    {
+     "id": "product",
+     "name": "Choose product",
+     "sessions": 4923,
+     "exits": 230,
+     "exit_rate": 0.0467,
+     "exit_class": "natural"
+    },
+    {
+     "id": "details",
+     "name": "Details",
+     "sessions": 4689,
+     "exits": 266,
+     "exit_rate": 0.0567,
+     "exit_class": "natural"
+    },
+    {
+     "id": "confirm",
+     "name": "Checkout and PIN",
+     "sessions": 4426,
+     "exits": 349,
+     "exit_rate": 0.0789,
+     "exit_class": "natural"
+    },
+    {
+     "id": "done",
+     "name": "Transaction done",
+     "sessions": 4077,
+     "exits": 0,
+     "exit_rate": 0.0,
+     "exit_class": null
+    }
+   ],
+   "completion": 0.8284
+  },
+  "ios": {
+   "label": "iOS",
+   "sessions": 10864,
+   "steps": [
+    {
+     "id": "product",
+     "name": "Choose product",
+     "sessions": 10859,
+     "exits": 564,
+     "exit_rate": 0.0519,
+     "exit_class": "natural"
+    },
+    {
+     "id": "details",
+     "name": "Details",
+     "sessions": 10292,
+     "exits": 640,
+     "exit_rate": 0.0622,
+     "exit_class": "natural"
+    },
+    {
+     "id": "confirm",
+     "name": "Checkout and PIN",
+     "sessions": 9653,
+     "exits": 711,
+     "exit_rate": 0.0737,
+     "exit_class": "natural"
+    },
+    {
+     "id": "done",
+     "name": "Transaction done",
+     "sessions": 8933,
+     "exits": 0,
+     "exit_rate": 0.0,
+     "exit_class": null
+    }
+   ],
+   "completion": 0.8236
+  }
+ },
+ "app_version_funnels": {
+  "4.11.1": {
+   "label": "4.11.1",
+   "sessions": 4472,
+   "steps": [
+    {
+     "id": "product",
+     "name": "Choose product",
+     "sessions": 4472,
+     "exits": 226,
+     "exit_rate": 0.0505,
+     "exit_class": "natural"
+    },
+    {
+     "id": "details",
+     "name": "Details",
+     "sessions": 4246,
+     "exits": 289,
+     "exit_rate": 0.0681,
+     "exit_class": "natural"
+    },
+    {
+     "id": "confirm",
+     "name": "Checkout and PIN",
+     "sessions": 3957,
+     "exits": 303,
+     "exit_rate": 0.0766,
+     "exit_class": "natural"
+    },
+    {
+     "id": "done",
+     "name": "Transaction done",
+     "sessions": 3654,
+     "exits": 0,
+     "exit_rate": 0.0,
+     "exit_class": null
+    }
+   ],
+   "completion": 0.8171
+  },
+  "4.11.2": {
+   "label": "4.11.2",
+   "sessions": 13443,
+   "steps": [
+    {
+     "id": "product",
+     "name": "Choose product",
+     "sessions": 13436,
+     "exits": 662,
+     "exit_rate": 0.0493,
+     "exit_class": "natural"
+    },
+    {
+     "id": "details",
+     "name": "Details",
+     "sessions": 12772,
+     "exits": 781,
+     "exit_rate": 0.0611,
+     "exit_class": "natural"
+    },
+    {
+     "id": "confirm",
+     "name": "Checkout and PIN",
+     "sessions": 11992,
+     "exits": 923,
+     "exit_rate": 0.077,
+     "exit_class": "natural"
+    },
+    {
+     "id": "done",
+     "name": "Transaction done",
+     "sessions": 11067,
+     "exits": 0,
+     "exit_rate": 0.0,
+     "exit_class": null
+    }
+   ],
+   "completion": 0.8238
+  },
+  "4.12": {
+   "label": "4.12",
+   "sessions": 3786,
+   "steps": [
+    {
+     "id": "product",
+     "name": "Choose product",
+     "sessions": 3780,
+     "exits": 197,
+     "exit_rate": 0.0521,
+     "exit_class": "natural"
+    },
+    {
+     "id": "details",
+     "name": "Details",
+     "sessions": 3579,
+     "exits": 202,
+     "exit_rate": 0.0564,
+     "exit_class": "natural"
+    },
+    {
+     "id": "confirm",
+     "name": "Checkout and PIN",
+     "sessions": 3380,
+     "exits": 252,
+     "exit_rate": 0.0746,
+     "exit_class": "natural"
+    },
+    {
+     "id": "done",
+     "name": "Transaction done",
+     "sessions": 3119,
+     "exits": 0,
+     "exit_rate": 0.0,
+     "exit_class": null
+    }
+   ],
+   "completion": 0.8281
   }
  },
  "stuck_sessions": [

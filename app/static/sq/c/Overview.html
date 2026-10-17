@@ -12,7 +12,7 @@
             </div>
             <p style="margin: 4px 0 0; color: #5F6368"><span style="font-weight: 500; color: #202124">What needs attention {{periodLower}}?</span></p>
           </div>
-          <a class="btn btn-filled" href="Brief.dc.html">
+          <a class="btn btn-filled" href="Recommendations.dc.html">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 13h7M9 17h5"></path></svg>
             Recommendations
           </a>
@@ -69,9 +69,12 @@
               <span class="meta" title="{{top.confLabel}} confidence"><span style="display: inline-flex; gap: 2px; align-items: flex-end" aria-hidden="true"><span style="width: 4px; height: 7px; border-radius: 1px; background: {{top.c1}}"></span><span style="width: 4px; height: 11px; border-radius: 1px; background: {{top.c2}}"></span><span style="width: 4px; height: 15px; border-radius: 1px; background: {{top.c3}}"></span></span><span class="sr">{{top.confLabel}} confidence</span></span>
               <span class="meta" title="Spotted {{top.ageLong}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>{{top.ageShort}}<span class="sr">, spotted {{top.ageLong}}</span></span>
               <div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
-                <a class="btn btn-tonal" data-fk="top-draft" href="#ProblemDetail" onclick="{{top.draft}}">Draft ticket</a>
-                <a class="btn btn-filled" data-fk="top-journeys" href="#FlowPrototype" onclick="{{top.journeys}}">Open in Journeys</a>
-                <a class="ibtn" aria-label="Chat about this finding" title="Chat about this finding" href="#Ask" onclick="{{top.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
+                <button type="button" class="btn btn-tonal" data-fk="top-draft" onClick="{{top.draft}}">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M9 6v12" stroke-dasharray="2 2"></path></svg>
+                  Draft ticket
+                </button>
+                <a class="btn btn-filled" data-fk="top-journeys" href="#Journeys" onclick="{{top.journeys}}">Open in Journeys</a>
+                <a class="ibtn" aria-label="Let's figure it out" title="Let's figure it out" href="#ChatNow" onclick="{{top.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
               </div>
             </div>
           </template>
@@ -96,20 +99,21 @@
               </div>
             </template>
           </div>
+          <template data-sc="if" value="{{hasTrendNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 13px; color: #5F6368">{{trendNote}}</p></template>
         </section>
 
         <template data-sc="if" value="{{showOthers}}" hint-placeholder-val="{{ true }}">
         <section class="card" aria-labelledby="problems" style="overflow: hidden">
-          <div style="display: flex; align-items: center; gap: 4px; padding: 16px 20px 8px">
-            <h2 id="problems" class="h2">{{otherTitle}}</h2>
-            <button type="button" aria-label="What this ranking means" aria-expanded="{{infoStr}}" onclick="{{toggleInfo}}" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
-            <span class="tag" style="margin-left: 4px">Calculated</span>
-          </div>
-          <template data-sc="if" value="{{infoOpen}}" hint-placeholder-val="{{ false }}">
+          <div class="sq-hover-info">
+            <div style="display: flex; align-items: center; gap: 4px; padding: 16px 20px 8px">
+              <h2 id="problems" class="h2">{{otherTitle}}</h2>
+              <button type="button" aria-label="What this ranking means" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
+              <span class="tag" style="margin-left: 4px">Calculated</span>
+            </div>
             <div role="note" style="margin: 0 20px 12px; padding: 12px 16px; background: #F8F9FA; border-radius: 8px; font-size: 13px; line-height: 20px; color: #3C4043">
               Worst problems first — how bad it is, how many people hit it, and how much it's costing. Select a row to see more.
             </div>
-          </template>
+          </div>
           <div style="overflow-x: auto; position: relative">
             <div style="min-width: 760px">
               <div class="cols" style="padding: 8px 20px; border-bottom: 1px solid #DADCE0" aria-hidden="true">
@@ -143,9 +147,12 @@
                       <span style="display: inline-flex; align-items: center; gap: 8px"><span class="lbl">Why</span><span class="{{p.whyTagCls}}">{{p.whyTag}}</span>{{p.why}}</span>
                       <span class="cap num" style="font-size: 13px"><span class="sq-count">{{p.sessions}}</span> sessions · spotted {{p.ageLong}}</span>
                       <span style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-                        <a class="btn btn-tonal" data-fk="row-draft-{{p.id}}" href="#ProblemDetail" onclick="{{p.draft}}">Draft ticket</a>
-                        <a class="btn btn-filled" data-fk="row-journeys-{{p.id}}" href="#FlowPrototype" onclick="{{p.journeys}}">Open in Journeys</a>
-                        <a class="ibtn" aria-label="Chat about this finding" title="Chat about this finding" href="#Ask" onclick="{{p.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
+                        <button type="button" class="btn btn-tonal" data-fk="row-draft-{{p.id}}" onClick="{{p.draft}}">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M9 6v12" stroke-dasharray="2 2"></path></svg>
+                          Draft ticket
+                        </button>
+                        <a class="btn btn-filled" data-fk="row-journeys-{{p.id}}" href="#Journeys" onclick="{{p.journeys}}">Open in Journeys</a>
+                        <a class="ibtn" aria-label="Let's figure it out" title="Let's figure it out" href="#ChatNow" onclick="{{p.askAI}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg></a>
                       </span>
                     </div>
                   </template>
@@ -164,8 +171,8 @@
               <span style="display: inline-flex; align-items: center; gap: 8px"><span class="cap num sq-count">{{exits.total}}</span><span class="tag">Calculated</span></span>
             </div>
             <template data-sc="if" value="{{exits.has}}" hint-placeholder-val="{{ true }}">
-              <div style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px" role="img" aria-label="{{exits.aria}}">
-                <template data-sc="for" list="{{exits.bars}}" as="b" hint-placeholder-count="4"><div class="sq-grow-x" style="width: {{b.w}}; background: {{b.color}}"></div></template>
+              <div class="sq-wipe" style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px" role="img" aria-label="{{exits.aria}}">
+                <template data-sc="for" list="{{exits.bars}}" as="b" hint-placeholder-count="4"><div style="width: {{b.w}}; background: {{b.color}}"></div></template>
               </div>
               <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px">
                 <template data-sc="for" list="{{exits.legend}}" as="l" hint-placeholder-count="4">
@@ -182,7 +189,7 @@
               <template data-sc="if" value="{{c.isKeep}}" hint-placeholder-val="{{ true }}">
                 <div style="display: flex; align-items: center; gap: 10px">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
-                  <span title="{{c.title}}">{{c.action}} <span style="font-weight: 500">{{c.item}}</span> as is for {{c.who}}<template data-sc="if" value="{{c.hasLink}}" hint-placeholder-val="{{ false }}"> <a href="Audiences.dc.html" style="text-decoration: none; font-size: 13px">· a growth audience →</a></template></span>
+                  <span title="{{c.title}}">{{c.action}} <span style="font-weight: 500">{{c.item}}</span> as is for {{c.who}}<template data-sc="if" value="{{c.hasLink}}" hint-placeholder-val="{{ false }}"> <a href="Audiences.dc.html" style="display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 13px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16 14.2a4.5 4.5 0 0 1 4.5 5.3"></path></svg>a growth audience →</a></template></span>
                 </div>
               </template>
               <template data-sc="if" value="{{c.isRuled}}" hint-placeholder-val="{{ false }}">
@@ -200,4 +207,11 @@
       </div>
     </main>
   </div>
+  <template data-sc="if" value="{{ticketModalOpen}}" hint-placeholder-val="{{ false }}">
+    <div role="presentation" onClick="{{closeTicketModal}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(32,33,36,.5)">
+      <div onClick="{{stopModal}}" role="dialog" aria-modal="true" class="sq-drawer-in" style="position: absolute; top: 0; right: 0; bottom: 0; width: min(640px, 100vw); overflow: auto; box-sizing: border-box; background: #FFFFFF; box-shadow: -8px 0 24px rgba(60,64,67,.3)">
+        <dc-import name="ProblemDetail" modal="true" hint-size="100%,auto"></dc-import>
+      </div>
+    </div>
+  </template>
 </div>

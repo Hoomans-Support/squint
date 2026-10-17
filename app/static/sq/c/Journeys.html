@@ -7,7 +7,7 @@
 
         <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
           <div>
-            <div class="cap" style="margin-bottom: 4px"><a href="Main.dc.html" style="text-decoration: none; font-weight: 500">← Overview</a>{{crumb}}</div>
+            <div class="cap" style="margin-bottom: 4px"><a href="Overview.dc.html" style="text-decoration: none; font-weight: 500">← Overview</a>{{crumb}}</div>
             <h1 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">Journeys</h1>
             <p style="margin: 4px 0 0; color: #5F6368"><span style="font-weight: 500; color: #202124">Where do people leave, and how do they struggle there?</span></p>
           </div>
@@ -18,7 +18,7 @@
           </div>
         </div>
 
-        <dc-import name="ScopeBar" hint-size="100%,40px"></dc-import>
+        <dc-import name="ScopeBar" hide-user-groups="{{ true }}" hint-size="100%,40px"></dc-import>
 
         <template data-sc="if" value="{{isCompareMode}}" hint-placeholder-val="{{ false }}">
           <section class="card" aria-label="Journey comparison by group" style="margin: 16px 0; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
@@ -166,14 +166,45 @@
               </div>
               <p style="margin: 0; font-size: 28px; line-height: 36px">{{hero.action}} <span style="font-weight: 500">{{hero.item}}</span> for {{hero.who}} <span style="font-size: 16px; color: #5F6368">{{hero.ctx}}</span></p>
               <template data-sc="if" value="{{hero.notTop}}" hint-placeholder-val="{{ false }}">
-                <button type="button" data-fk="top" onClick="{{goTop}}" style="align-self: flex-start; margin-top: -8px; border: 0; background: transparent; padding: 0; font-family: inherit; font-size: 13px; color: #1A73E8; cursor: pointer">Biggest leak in this journey: {{topName}} →</button>
+                <div style="display: flex; align-items: center; gap: 4px; margin-top: -8px">
+                  <button type="button" data-fk="top" onClick="{{goTop}}" style="border: 0; background: transparent; padding: 0; font-family: inherit; font-size: 13px; color: #1A73E8; cursor: pointer">Biggest leak in this journey: {{topName}} →</button>
+                  <template data-sc="if" value="{{topHasAction}}" hint-placeholder-val="{{ false }}">
+                    <button type="button" aria-label="Why trust this" onClick="{{toggleTopTrust}}" style="width: 18px; height: 18px; border-radius: 9px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 10px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex: none">i</button>
+                    <template data-sc="if" value="{{topTrustOpen}}" hint-placeholder-val="{{ false }}">
+                      <div role="presentation" onClick="{{closeTopTrust}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(32,33,36,.5); display: flex; align-items: center; justify-content: center; padding: 24px">
+                        <div role="dialog" aria-modal="true" aria-label="Why trust this" onClick="{{stop}}" style="width: 100%; max-width: 420px; box-sizing: border-box; background: #FFFFFF; border-radius: 12px; padding: 20px 24px; box-shadow: 0 8px 24px rgba(60,64,67,.3); display: flex; flex-direction: column; gap: 12px">
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+                            <h3 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 500">Why trust this</h3>
+                            <button type="button" aria-label="Close" onClick="{{closeTopTrust}}" style="width: 28px; height: 28px; border-radius: 14px; border: 0; background: transparent; color: #5F6368; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 8px"><span class="lbl">Confidence</span><span style="font-weight: 500">{{topConfLabel}}</span><span class="tag" style="background: #E8F0FE; color: #174EA6">{{topWhyTag}}</span></div>
+                          <p style="margin: 0; font-size: 13px; line-height: 20px; color: #3C4043">{{topWhy}}</p>
+                          <template data-sc="if" value="{{topEvidence}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 13px; color: #5F6368">{{topEvidence}}</p></template>
+                        </div>
+                      </div>
+                    </template>
+                    <span style="position: relative">
+                      <button type="button" class="ibtn" aria-label="Biggest leak actions" aria-expanded="{{topMenuStr}}" onClick="{{toggleTopMenu}}" style="width: 20px; height: 20px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
+                      <template data-sc="if" value="{{topMenuOpen}}" hint-placeholder-val="{{ false }}">
+                        <div role="menu" aria-label="Biggest leak actions" style="position: absolute; left: 0; top: 24px; z-index: 5; min-width: 160px; padding: 8px 0; background: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 6px 2px rgba(60,64,67,.15), 0 2px 2px rgba(60,64,67,.3); display: flex; flex-direction: column">
+                          <template data-sc="if" value="{{topHasWatch}}" hint-placeholder-val="{{ false }}"><button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer" onClick="{{topWatch}}">Watch sessions</button></template>
+                          <button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px" onClick="{{topDraft}}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M9 6v12" stroke-dasharray="2 2"></path></svg>
+                            Draft ticket
+                          </button>
+                          <button type="button" role="menuitem" class="sqa-opt" style="text-align: left; font-family: inherit; font-size: 14px; cursor: pointer" onClick="{{topMarkFixed}}">Mark fixed</button>
+                        </div>
+                      </template>
+                    </span>
+                  </template>
+                </div>
               </template>
               <template data-sc="if" value="{{hero.hasStats}}" hint-placeholder-val="{{ true }}"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px">
                 <template data-sc="for" list="{{hero.stats}}" as="t" hint-placeholder-count="4">
                   <div class="stat" style="{{t.box}}"><div class="lbl">{{t.label}}</div><div class="num sq-count" style="font-size: 22px; line-height: 30px; {{t.valStyle}}">{{t.v}}</div><div class="cap">{{t.sub}}</div></div>
                 </template>
               </div></template>
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="lbl">{{hero.whyLabel}}</span><span class="tag" style="{{hero.whyTagStyle}}">{{hero.whyTag}}</span><span>{{hero.why}}</span></div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="lbl">{{hero.whyLabel}}</span><template data-sc="if" value="{{hero.whyIsAI}}" hint-placeholder-val="{{ false }}"><span class="tag tag-ai">AI</span><template data-sc="if" value="{{hero.whyLowConf}}" hint-placeholder-val="{{ false }}"><span class="cap">low confidence</span></template></template><template data-sc="if" value="{{hero.whyNotAI}}" hint-placeholder-val="{{ true }}"><span class="tag" style="{{hero.whyTagStyle}}">{{hero.whyTag}}</span></template><span>{{hero.why}}</span></div>
               <template data-sc="if" value="{{hero.hasWho}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; background: #F8F9FA; border-radius: 10px">
                 <div style="display: flex; align-items: baseline"><span class="lbl">Who's most affected</span></div>
                 <template data-sc="for" list="{{hero.whoRows}}" as="u" hint-placeholder-count="5">
@@ -210,22 +241,22 @@
           </template>
 
           <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px">
-            <button type="button" class="btn btn-filled" onClick="{{hero.openPrimary}}">{{hero.primary}}</button>
-            <template data-sc="if" value="{{hero.hasWatch}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-outlined" onClick="{{hero.openWatch}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"></path></svg>Watch sessions</button></template>
+            <button type="button" class="btn btn-filled" onClick="{{hero.openPrimary}}">
+              <template data-sc="if" value="{{hero.primaryIsDraft}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M9 6v12" stroke-dasharray="2 2"></path></svg></template>
+              {{hero.primary}}
+            </button>
           </div>
         </section>
 
         <!-- Evidence: Where sessions go -->
         <section class="card" aria-labelledby="flow" style="padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px">
           <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
-            <div style="display: flex; align-items: center; gap: 4px; position: relative">
+            <div class="sq-hover-info" style="display: flex; align-items: center; gap: 4px; position: relative">
               <h2 id="flow" class="h2">Where users go <span style="font-size: 12px; font-weight: 400; color: #5F6368">· counted in sessions</span></h2>
-              <button type="button" aria-label="How to read this chart" aria-expanded="{{infoFlowStr}}" onclick="{{toggleInfoFlow}}" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
-              <template data-sc="if" value="{{infoFlowOpen}}" hint-placeholder-val="{{ false }}">
-                <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043">
-                  Wider bands mean more sessions. Bands curving down are people who left or switched journeys. Click a step to highlight its flows.
-                </div>
-              </template>
+              <button type="button" aria-label="How to read this chart" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
+              <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043">
+                Wider bands mean more sessions. Bands curving down are people who left or switched journeys. Click a step to highlight its flows.
+              </div>
             </div>
             <div class="seg" role="group" aria-label="View">
               <button type="button" data-fk="chart" aria-pressed="{{chartPressed}}" onClick="{{showChart}}" style="{{chartBtn}}">Chart</button>
@@ -332,14 +363,12 @@
         <template data-sc="if" value="{{notMerged}}" hint-placeholder-val="{{ true }}">
         <section class="card" aria-labelledby="bf" style="padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px">
           <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
-            <div style="display: flex; align-items: center; gap: 4px; position: relative">
+            <div class="sq-hover-info" style="display: flex; align-items: center; gap: 4px; position: relative">
               <h2 id="bf" class="h2">Back-and-forth</h2>
-              <button type="button" aria-label="How to read this chart" aria-expanded="{{infoLoopsStr}}" onclick="{{toggleInfoLoops}}" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
-              <template data-sc="if" value="{{infoLoopsOpen}}" hint-placeholder-val="{{ false }}">
-                <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043">
-                  Each arc is people going back one step. Thicker arcs mean more people. Arcs not touching this issue's step are greyed.
-                </div>
-              </template>
+              <button type="button" aria-label="How to read this chart" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
+              <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043">
+                Each arc is people going back one step. Thicker arcs mean more people. Arcs not touching this issue's step are greyed.
+              </div>
             </div>
             <span class="cap num">{{loopsNote}}</span>
           </div>
@@ -391,7 +420,13 @@
                 <h2 id="grp" class="h2" style="display: flex; align-items: center; gap: 8px">Comparing {{compareNames}}<span class="chip" style="background: #E8F0FE; color: #174EA6">Compare mode</span></h2>
               </template>
               <template data-sc="if" value="{{notCompareMode}}" hint-placeholder-val="{{ true }}">
-                <h2 id="grp" class="h2">By user group</h2>
+                <span class="sq-hover-info" style="display: inline-flex; align-items: center; gap: 4px; position: relative">
+                  <h2 id="grp" class="h2" style="margin: 0">By user group</h2>
+                  <button type="button" aria-label="About this table" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex: none">i</button>
+                  <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043">
+                    Each cell is the selected measure's share of sessions at that step, for that user group. Darker cells mean more sessions affected; switch the measure above to compare a different signal.
+                  </div>
+                </span>
               </template>
               <p class="cap" style="margin: 4px 0 0">Share of sessions at each step with: {{metricName}}</p>
             </div>
@@ -411,9 +446,20 @@
           </div>
         </section>
 
-        <details class="card" style="padding: 16px 20px">
-          <summary style="cursor: pointer; font-weight: 500">Transaction completion by product</summary>
+        <details class="card" style="padding: 16px 20px" open="{{pcOpen}}" ontoggle="{{pcToggle}}">
+          <summary class="sq-hover-info" style="cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; position: relative">
+            Transaction completion by {{pcDimLabel}}
+            <button type="button" aria-label="About this section" onClick="{{stopPcInfo}}" style="width: 18px; height: 18px; border-radius: 9px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 10px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex: none">i</button>
+            <div role="note" style="position: absolute; top: 26px; left: 0; z-index: 10; width: 280px; max-width: min(280px, calc(100vw - 48px)); box-sizing: border-box; padding: 12px 16px; background: #FFFFFF; border-radius: 8px; border: 1px solid #DADCE0; box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15); font-size: 13px; line-height: 20px; color: #3C4043; cursor: default">
+              Share of sessions that finish the transaction flow, counted over the whole sample, not the scope bar above. Switch Product/Device/App version to break it down differently; red rows are notably below average.
+            </div>
+          </summary>
           <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 16px">
+            <div class="seg" role="group" aria-label="Break down by" style="align-self: flex-start">
+              <template data-sc="for" list="{{pcTabs}}" as="t" hint-placeholder-count="3">
+                <button type="button" aria-pressed="{{t.sel}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+              </template>
+            </div>
             <div class="cap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span class="tag">Calculated</span>{{productNote}}</div>
             <template data-sc="for" list="{{products}}" as="p" hint-placeholder-count="7">
               <div style="display: grid; grid-template-columns: 200px 1fr 48px; gap: 6px 16px; align-items: center">
@@ -428,4 +474,11 @@
       </div>
     </main>
   </div>
+  <template data-sc="if" value="{{ticketModalOpen}}" hint-placeholder-val="{{ false }}">
+    <div role="presentation" onClick="{{closeTicketModal}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(32,33,36,.5)">
+      <div onClick="{{stopModal}}" role="dialog" aria-modal="true" class="sq-drawer-in" style="position: absolute; top: 0; right: 0; bottom: 0; width: min(640px, 100vw); overflow: auto; box-sizing: border-box; background: #FFFFFF; box-shadow: -8px 0 24px rgba(60,64,67,.3)">
+        <dc-import name="ProblemDetail" modal="true" hint-size="100%,auto"></dc-import>
+      </div>
+    </div>
+  </template>
 </div>

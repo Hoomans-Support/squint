@@ -49,9 +49,10 @@ class Component extends DCLogic {
       };
     });
     const platLabel = sc.platform === 'all' ? 'All platforms' : cap(sc.platform);
+    const showUserGroups = !this.props.hideUserGroups;
 
-    const prevLabel = (SQ.view().kpis[0] || {}).prev_label || 'previous period';
     return {
+      showUserGroups,
       rangeLabel: SQ.RANGES[sc.range].label, rangeDates: SQ.rangeDates(), ranges,
       openRange: menu === 'range', openUser: menu === 'user', openPlatform: menu === 'platform',
       rangeStr: String(menu === 'range'), userStr: String(menu === 'user'), platformStr: String(menu === 'platform'),
@@ -61,10 +62,6 @@ class Component extends DCLogic {
       groups, userLabel: selected.length > 1 ? selected.length + ' groups' : SQ.personaLabel(sc.persona), userCount: SQ.fmt(SQ.userCount()),
       platforms, platLabel,
       toggleRange: () => SQ.openMenu('range'), toggleUser: () => SQ.openMenu('user'), togglePlatform: () => SQ.openMenu('platform'),
-      compare: sc.compare, compareStr: String(sc.compare), compareLabel: 'vs ' + prevLabel,
-      compareStyle: 'display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 10px; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; '
-        + (sc.compare ? 'border: 1px solid transparent; background: #E8F0FE; color: #174EA6;' : 'border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368;'),
-      toggleCompare: () => { SQ.setScope({ compare: !sc.compare }); SQ.refocus('compare'); },
       asOf: 'Sample data · as of ' + SQ.asOf()
     };
   }
