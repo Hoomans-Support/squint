@@ -211,6 +211,12 @@ def main():
                   and page.get_by_role("button", name="Copy").is_visible()
                   and page.get_by_role("button", name=re.compile("Download")).is_visible())
             check("the drafted ticket shows no Draft ticket or Watch sessions button", page.locator('[data-fk="pd-ticket"]').count() == 0 and page.locator('[data-fk="pd-watch"]').count() == 0)
+            page.get_by_role("button", name="Ticket created").click(); pause(page)
+            check("clicking Ticket created closes the whole popup, not just the drafted view",
+                  page.evaluate("!SQ.state.ticketModalOpen") and page.evaluate("location.hash") == "#Overview")
+            route(page, "Overview")
+            page.get_by_role("button", name="Draft ticket").first.click(); wait_js(page, "SQ.state.ticketModalOpen === true")
+            page.locator('[data-fk="pd-ticket"]').click(); pause(page)
             session_row = page.locator('[role="region"][aria-label="Ticket draft"] button').filter(has_text=re.compile(r"\b(AM|PM)\b"))
             if session_row.count():
                 session_row.first.click(); wait_js(page, "location.hash === '#SessionPlayer'")
@@ -220,9 +226,7 @@ def main():
                 page.locator('[data-fk="pd-ticket"]').click(); pause(page)
             else: check("a ticket's attached session opens that exact sample in Watch sessions", True, "this finding has no sampled sessions")
             page.keyboard.press("Escape"); pause(page)
-            check("Escape first returns from the ticket to the finding drawer", page.evaluate("SQ.state.ticketModalOpen === true") and page.locator('[data-fk="pd-ticket"]').count() == 1)
-            page.keyboard.press("Escape"); pause(page)
-            check("Escape then closes the ticket popup without navigating away", page.evaluate("!SQ.state.ticketModalOpen") and page.evaluate("location.hash") == "#Overview")
+            check("Escape closes the whole ticket popup in one press, without navigating away", page.evaluate("!SQ.state.ticketModalOpen") and page.evaluate("location.hash") == "#Overview")
             check("closing the ticket popup restores focus to its opener", page.evaluate("document.activeElement.dataset.fk === 'top-draft'"))
         else: check("Draft ticket carries the takeaway insight", False, "CTA missing")
         route(page, "Overview")

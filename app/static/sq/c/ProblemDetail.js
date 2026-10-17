@@ -30,13 +30,16 @@ class Component extends DCLogic {
       label: s.label,
       open: () => { SQ.state.watchInsight = i.id; SQ.state.watchSessionId = s.id; SQ.go('SessionPlayer'); }
     }));
+    const close = () => (modal ? SQ.closeTicketModal() : SQ.closeDrawer());
     return {
       has: true, none: false, outerStyle, innerStyle, m, r, conf0: conf[0], conf1: conf[1], conf2: conf[2],
       hasNav: m.hasNav, prev: () => go(-1), next: () => go(1),
       hasSub: !!m.sub,
       hasWatch: ((SQ.watchFor(i.id) || {}).sessions || []).length > 0,
-      close: () => (modal ? SQ.closeTicketModal() : SQ.closeDrawer()),
+      close,
       watch: () => { SQ.state.watchInsight = i.id; SQ.go('SessionPlayer'); },
+      // session-local only, same mechanism as the Journeys "Biggest leak" menu (SQ.markFixed/SQ.isFixed)
+      hasMarkFixed: !m.healthy, markFixed: () => { SQ.markFixed(i.id); close(); },
       ticketOpen, ticketClosed: !ticketOpen,
       toggleTicket: () => SQ.keepFocus(() => { SQ.state.ticketOpen = !SQ.state.ticketOpen; this.state.copied = false; SQ.redraw(); }),
       // stage 1 (the finding drawer): reason, ruled-out causes, caveat, and who it's assigned to

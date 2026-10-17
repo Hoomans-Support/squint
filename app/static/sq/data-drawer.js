@@ -200,18 +200,14 @@
   };
   SQ.ticketFile = (i) => 'squint-ticket-' + String(i.id).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) + '.md';
 
-  /* Esc closes the ticket first, then the page */
+  /* Esc closes the whole drawer/page, same as the ticket's own "Ticket created" button and the X */
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || e.defaultPrevented) return;
     const r = routeOf(location.hash);
     if (SQ.state.menu != null) return;
-    if (SQ.state.ticketModalOpen) {
-      if (SQ.state.ticketOpen) { SQ.state.ticketOpen = false; SQ.redraw(); SQ.refocus('pd-ticket'); } else SQ.closeTicketModal();
-      return;
-    }
-    if (DRAWER.test(r)) {
-      if (SQ.state.ticketOpen) { SQ.state.ticketOpen = false; SQ.redraw(); SQ.refocus('pd-ticket'); } else SQ.closeDrawer();
-    } else if (WATCH.test(r)) SQ.closeWatch();
+    if (SQ.state.ticketModalOpen) { SQ.closeTicketModal(); return; }
+    if (DRAWER.test(r)) SQ.closeDrawer();
+    else if (WATCH.test(r)) SQ.closeWatch();
   });
 
   /* ---------- watch sessions ---------- */
