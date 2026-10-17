@@ -15,7 +15,7 @@
   <dc-import name="TopBar" hint-size="100%,64px"></dc-import>
   <div style="display: flex; flex-wrap: wrap; align-items: stretch; min-height: calc(100vh - 64px)">
 
-    <div style="flex: 0 1 auto; max-width: 100%; min-width: 0"><dc-import name="NavRail" active="ask" hint-size="256px,640px"></dc-import></div>
+    <div style="flex: 0 0 256px"><dc-import name="NavRail" active="ask" hint-size="256px,640px"></dc-import></div>
 
     <aside id="ask-history" aria-label="Question history" style="flex: 1 1 300px; max-width: 320px; box-sizing: border-box; padding: 16px 12px 24px; background: #FFFFFF; border-right: 1px solid #E8EAED; border-left: 1px solid #E8EAED; display: flex; flex-direction: column; gap: 8px; {{historyDisplay}}">
       <button type="button" class="btn btn-tonal" style="align-self: flex-start; padding: 0 20px 0 16px" onClick="{{newQuestion}}">

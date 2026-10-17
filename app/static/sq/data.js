@@ -12,7 +12,7 @@
 
   /* ---- visitor settings: theme, currency, alert filter. Saved to localStorage so they survive a reload (per visitor, not shared). ---- */
   const SETTINGS_KEY = 'sq.settings';
-  const DEFAULT_SETTINGS = { theme: 'light', currency: 'both', alertsCriticalOnly: false, navCollapsed: false };
+  const DEFAULT_SETTINGS = { theme: 'light', currency: 'both', alertsCriticalOnly: false };
   SQ.settings = Object.assign({}, DEFAULT_SETTINGS);
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
