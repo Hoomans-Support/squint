@@ -21,6 +21,8 @@ from datetime import timedelta
 from pathlib import Path
 from statistics import median
 
+from build_results import RANGES as RANGE_WINDOWS   # same windows the insight ranges are built from; keep one source
+
 WATCH_SEED = 42                # fixed: the same sessions every build
 WATCH_N, WATCH_AFFECTED = 15, 11
 HIGH_TOPUP_PHP = 50_000        # the generator's "large top-up" line (P2); the Watchdog pattern reports 86% above it
@@ -31,7 +33,6 @@ LOAD_FIRST_SHARE = 0.8         # E-load share of a store owner's completed purch
 STRAIGHT_THROUGH = 0.9         # share of a person's journeys that finished
 IDLE_S = 15                    # no activity for this long is shown as idle
 MIN_GROUP_N = 20               # smaller groups get no rate
-RANGE_WINDOWS = {"24h": timedelta(hours=24), "7d": timedelta(days=7), "30d": timedelta(days=30)}
 FOOTER = "Rebuilt from tracked events, inputs masked, no video"
 SAMPLE_TABLES = {
     "wallet_orders": "One row per completed transaction or top-up, derived 1:1 from the app events (completed screens and their amounts). No refunds, no off-app payments: those need a real backend.",

@@ -23,9 +23,11 @@
       label: s.label, people: n(s.people), width: (s.share * 100).toFixed(2) + '%',
       color: ['#1A73E8', '#F9AB00', '#1E8E3E'][i] || '#5F6368'
     }));
-    // the featured "Top audience to act on" card is drawn from the same win-back pick as one of A.cards;
-    // drop that duplicate from the grid below so every card there is a distinct audience.
-    const cards = A.cards.filter((c) => !top.insight_id || c.insight_id !== top.insight_id).map((c) => {
+    // win_back_stalled in A.cards is always built from the whole-sample win-back pick (A.win_back.top), even
+    // when the featured card above (`top`) is a range-scoped pick for the active date range; dedup against
+    // the whole-sample id so the two don't drift apart when a range filter picks a different audience.
+    const wholeSampleTopId = A.win_back.top.insight_id;
+    const cards = A.cards.filter((c) => !wholeSampleTopId || c.insight_id !== wholeSampleTopId).map((c) => {
       const [verb, bg, fg] = palette[c.kind] || ['Audience', '#F1F3F4', '#3C4043'];
       return {
         kind: c.kind, verb, bg, fg, title: c.title, basis: c.basis, action: c.action,

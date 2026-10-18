@@ -103,13 +103,13 @@
         return n ? points.reduce((sum, p) => sum + p[rateKey] * p[countKey], 0) / n : null;
       };
       const scopedRate = average('rate', 'n');
-      stat = scopedRate == null ? null : scopedRate * 100;
+      if (scopedRate != null) stat = scopedRate * 100;
       const scopedBase = average('ref_rate', 'ref_n');
-      base = scopedBase == null ? null : scopedBase * 100;
+      if (scopedBase != null) base = scopedBase * 100;
     }
     const fh = (i.facts || [])[0] || '';
     if (base == null) { const m = fh.match(/first half (\d+)%/); if (m) base = Number(m[1]); }
-    const rateText = (n) => String(Number(n.toFixed(1))) + '%';
+    const rateText = (n) => Number(n).toFixed(1) + '%';
     if (stat != null && base != null) baseLabel = 'vs ' + rateText(base);
     const crit = i.severity === 'critical';
     const cause = SQ.causeOf(i), age = SQ.ageOf(i), conf = SQ.confOf(i), tag = SQ.diagTag(i);
