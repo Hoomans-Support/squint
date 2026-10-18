@@ -91,9 +91,26 @@
     let stat = null, base = null, baseLabel = 'no baseline';
     if (sig) { stat = sig.value * 100; base = sig.reference == null ? null : sig.reference * 100; }
     else if (g.exit_rate != null) { stat = g.exit_rate * 100; }
+    const series = (i.timeline || {}).series || [];
+    if (series.length) {
+      const end = new Date(SQ.data.meta.as_of + 'T00:00:00Z');
+      const start = new Date(end);
+      start.setUTCDate(start.getUTCDate() - (SQ.RANGES[SQ.scope.range].days - 1));
+      const startDay = start.toISOString().slice(0, 10), endDay = end.toISOString().slice(0, 10);
+      const average = (rateKey, countKey) => {
+        const points = series.filter((p) => p.d >= startDay && p.d <= endDay && p[rateKey] != null && p[countKey] > 0);
+        const n = points.reduce((sum, p) => sum + p[countKey], 0);
+        return n ? points.reduce((sum, p) => sum + p[rateKey] * p[countKey], 0) / n : null;
+      };
+      const scopedRate = average('rate', 'n');
+      stat = scopedRate == null ? null : scopedRate * 100;
+      const scopedBase = average('ref_rate', 'ref_n');
+      base = scopedBase == null ? null : scopedBase * 100;
+    }
     const fh = (i.facts || [])[0] || '';
     if (base == null) { const m = fh.match(/first half (\d+)%/); if (m) base = Number(m[1]); }
-    if (stat != null && base != null) baseLabel = 'vs ' + Math.round(base) + '%';
+    const rateText = (n) => String(Number(n.toFixed(1))) + '%';
+    if (stat != null && base != null) baseLabel = 'vs ' + rateText(base);
     const crit = i.severity === 'critical';
     const cause = SQ.causeOf(i), age = SQ.ageOf(i), conf = SQ.confOf(i), tag = SQ.diagTag(i);
     const v = i.impact && i.impact.per_week_value;
@@ -103,7 +120,7 @@
       sevBg: crit ? '#FCE8E6' : '#FEF7E0', sevFg: crit ? '#C5221F' : '#B06000',
       cause: cause.name, causeColor: cause.color,
       action: SQ.verbOf(i), item: i.screen_label || i.title || 'this step', who: SQ.whoOf(i), ctx: SQ.ctxOf(i),
-      statText: stat == null ? 'n/a' : Math.round(stat) + '%',
+      statText: stat == null ? 'n/a' : rateText(stat),
       statW: stat == null ? '0%' : clamp(stat, 0, 100) + '%',
       hasBase: base != null, baseW: base == null ? '0%' : clamp(base, 0, 100) + '%',
       baseLabel, baseTitle: sig ? 'Baseline: ' + (i.compared_with || 'reference') : (base != null ? 'Baseline: ' + (i.compared_with || 'earlier') : 'No baseline for this step'),

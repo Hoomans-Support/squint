@@ -11,9 +11,9 @@
             <h1 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">Journeys</h1>
             <p style="margin: 4px 0 0; color: #5F6368"><span style="font-weight: 500; color: #202124">Where do people leave, and how do they struggle there?</span></p>
           </div>
-          <div class="seg" role="group" aria-label="Journey">
+          <div role="tablist" aria-label="Journey" style="display: flex; flex-wrap: wrap">
             <template data-sc="for" list="{{jtabs}}" as="j" hint-placeholder-count="3">
-              <button type="button" data-fk="{{j.fk}}" aria-pressed="{{j.on}}" onClick="{{j.pick}}" title="{{j.title}}" style="{{j.style}}">{{j.label}}<template data-sc="if" value="{{j.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="height: 18px; padding: 0 6px; border-radius: 9px; background: #FCE8E6; color: #C5221F; font-size: 11px; display: inline-flex; align-items: center">{{j.badge}}</span></template></button>
+              <button type="button" role="tab" class="issue" data-fk="{{j.fk}}" aria-selected="{{j.on}}" onClick="{{j.pick}}" title="{{j.title}}" style="{{j.style}}">{{j.label}}<template data-sc="if" value="{{j.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="height: 18px; padding: 0 6px; border-radius: 9px; background: #FCE8E6; color: #C5221F; font-size: 11px; display: inline-flex; align-items: center">{{j.badge}}</span></template></button>
             </template>
           </div>
         </div>
@@ -56,7 +56,7 @@
                     <span class="num" style="text-align: center">{{r.n}}</span>
                     <span style="min-width: 0">{{r.action}} <span style="font-weight: 500; color: #3C4043">{{r.item}}</span> for {{r.who}}</span>
                     <span class="num" style="display: flex; flex-direction: column; align-items: flex-end; line-height: 18px; white-space: normal"><span style="color: #3C4043">{{r.signal}}</span><span style="font-size: 11px; line-height: 14px; font-weight: 400; color: #5F6368">{{r.vs}}</span></span>
-                    <span style="display: inline-flex; align-items: center; gap: 6px"><span class="dot" style="background: {{r.dot}}; width: 6px; height: 6px"></span>{{r.type}}</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap"><span class="dot" style="background: {{r.dot}}; width: 6px; height: 6px; flex: 0 0 6px"></span>{{r.type}}</span>
                     <span title="{{r.confLabel}} confidence" style="display: inline-flex; gap: 2px; align-items: flex-end"><span style="width: 4px; height: 7px; border-radius: 1px; background: {{r.c1}}"></span><span style="width: 4px; height: 11px; border-radius: 1px; background: {{r.c2}}"></span><span style="width: 4px; height: 15px; border-radius: 1px; background: {{r.c3}}"></span></span>
                   </button>
                 </template>
@@ -69,7 +69,7 @@
         <template data-sc="if" value="{{notCompareMode}}" hint-placeholder-val="{{ true }}">
         <section class="card" aria-labelledby="hero" style="padding: 28px 32px; display: flex; flex-direction: column; gap: 24px">
           <div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
-            <figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+            <figure style="width: 240px; max-width: 100%; flex: 0 0 240px; box-sizing: border-box; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
               <template data-sc="if" value="{{vis.otp}}" hint-placeholder-val="{{ true }}">
                 <div class="phone" role="img" aria-label="{{vis.aria}}">
                   <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500"><span aria-hidden="true">‹</span> Verify your phone</div>

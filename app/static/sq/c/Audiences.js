@@ -22,7 +22,7 @@ class Component extends DCLogic {
     const copyMessage = this.state.copied ? "Summary copied." : this.state.copyFailed ? "Copy is unavailable here." : "";
     return {
       ...M, rank, copyMessage, copy, openJourney,
-      repeatHelp: 'How to read: of the buyers in the last 14 days, how many completed-purchase events each had. Longer bars toward "4 or more" mean more repeat buyers.'
+      repeatHelp: 'Of the buyers in the last 14 days, how many completed-purchase events each had. Longer bars toward "4 or more" mean more repeat buyers.'
     };
   }
 }

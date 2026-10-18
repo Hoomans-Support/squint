@@ -47,7 +47,7 @@ class Component extends DCLogic {
     const jtabs = MODEL.tabs.map((t) => ({
       label: t.name + (t.badge ? ' ' : ''), badge: t.badge, hasBadge: !!t.badge, on: jid === t.id ? 'true' : 'false', fk: 'tab-' + t.id,
       title: t.badge ? 'Open problems: ' + t.badge : 'No open problems in this scope',
-      style: jid === t.id ? 'background: #E8F0FE; color: #174EA6;' : '',
+      style: jid === t.id ? 'color: #174EA6; font-weight: 500; border-bottom-color: #1A73E8;' : '',
       pick: () => setJourney(t.id)
     }));
 

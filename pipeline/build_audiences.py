@@ -31,6 +31,7 @@ LOAD_FIRST_SHARE = 0.8         # E-load share of a store owner's completed purch
 STRAIGHT_THROUGH = 0.9         # share of a person's journeys that finished
 IDLE_S = 15                    # no activity for this long is shown as idle
 MIN_GROUP_N = 20               # smaller groups get no rate
+RANGE_WINDOWS = {"24h": timedelta(hours=24), "7d": timedelta(days=7), "30d": timedelta(days=30)}
 FOOTER = "Rebuilt from tracked events, inputs masked, no video"
 SAMPLE_TABLES = {
     "wallet_orders": "One row per completed transaction or top-up, derived 1:1 from the app events (completed screens and their amounts). No refunds, no off-app payments: those need a real backend.",
@@ -74,6 +75,7 @@ class Ctx:
             ss.sort(key=lambda s: s["dt"])
         self.persona_of = {u: ss[0]["persona"] for u, ss in self.by_user.items()}
         self.obs_end = max(self.parse_ts(s["end"]) for s in self.all_s)
+        self.t_end = a.get("t_end", self.obs_end)
         users_on = defaultdict(set)
         for s in self.all_s:
             users_on[s["device"]].add(s["user"])
@@ -90,12 +92,13 @@ class Ctx:
 
 
 # ----------------------------------------------------------------------------- audiences
-def win_back(cx: Ctx, ins: dict) -> tuple:
+def win_back(cx: Ctx, ins: dict, period: tuple | None = None) -> tuple:
     """People whose latest session ended at the insight's screen: never came back, came back without finishing, came back and finished."""
     member = cx.members[ins["id"]][0]
     stall = {}
     for u, ss in cx.by_user.items():
-        hit = [s for s in ss if member(s) and s["last"] == ins["screen"]]
+        hit = [s for s in ss if member(s) and s["last"] == ins["screen"]
+               and (period is None or period[0] <= s["dt"] < period[1])]
         if hit:
             stall[u] = hit[-1]
     states = {"never_returned": [], "returned_not_finished": [], "returned_finished": []}
@@ -107,8 +110,9 @@ def win_back(cx: Ctx, ins: dict) -> tuple:
     if ins["screen"] == "otp":
         labels["returned_finished"] = "Returned and signed up or logged in"
     row = {"id": f"win_back:{ins['id']}", "insight_id": ins["id"], "insight_rank": ins["rank"], "screen": ins["screen"],
-           "screen_label": ins["screen_label"], "people": n, "sessions": sum(1 for ss in cx.by_user.values() for s in ss if member(s) and s["last"] == ins["screen"]),
-           "states": [{"id": k, "label": labels[k], "people": len(v), "share": share(len(v), n)} for k, v in states.items()],
+           "screen_label": ins["screen_label"], "people": n, "sessions": sum(1 for ss in cx.by_user.values() for s in ss if member(s) and s["last"] == ins["screen"]
+                                                                                   and (period is None or period[0] <= s["dt"] < period[1])),
+        "states": [{"id": k, "label": labels[k], "people": len(v), "share": share(len(v), n)} for k, v in states.items()],
            "finished_by_journey": {k: v for k, v in sorted(fin_j.items())},
            "definition": "People whose latest session in this finding ended on this screen. 'Returned' = any later session; 'finished' = a later session that completed the same journey "
                          "(same product for a purchase). Counted up to the end of the sample window.",
@@ -118,7 +122,7 @@ def win_back(cx: Ctx, ins: dict) -> tuple:
     return row, states
 
 
-def audience_blocks(cx: Ctx, pin_otp: bool = True) -> tuple:
+def audience_blocks(cx: Ctx, pin_otp: bool = True, range_insight_ids: dict | None = None) -> tuple:
     members_rows = []      # BigQuery audience_members
     active = list(cx.by_user)
     n_active = len(active)
@@ -153,6 +157,36 @@ def audience_blocks(cx: Ctx, pin_otp: bool = True) -> tuple:
                "title": "No stalled audience in this scope", "advice": "Choose another platform or user group to see a matching audience.",
                "finished_by_journey": {}, "definition": "No matching people in this scope.", "source": "calculated"}
     top["text_source"] = "rule"
+
+    # The featured audience follows the same time range as the scope bar. The static `top` above remains
+    # the whole-sample default for consumers that do not pass view-specific insight IDs.
+    by_range = {}
+    if range_insight_ids is not None:
+        for range_id, delta in RANGE_WINDOWS.items():
+            view_ids = set(range_insight_ids.get(range_id, []))
+            period = (cx.t_end - delta, cx.t_end)
+            range_rows = []
+            for ins in cx.insights:
+                if ins["id"] not in view_ids or ins["severity"] == "healthy":
+                    continue
+                row, _ = win_back(cx, ins, period)
+                if row["people"]:
+                    range_rows.append(row)
+            range_rows.sort(key=lambda r: ((r["screen"] != "otp") if pin_otp else False, r["insight_rank"]))
+            if range_rows:
+                range_top = dict(range_rows[0])
+                range_top["title"] = f"Win back {'sign-in and sign-up' if range_top['screen'] == 'otp' else 'the finish'} for {range_top['people']} people who stalled at {range_top['screen_label']}"
+                range_top["advice"] = (f"They stopped at {range_top['screen_label']}. Send once the fix ships, so they don't hit it again." if range_top["screen"] == "otp"
+                                        else f"They stopped at {range_top['screen_label']}. Fix the step first, then invite them back.")
+                range_top["text_source"] = "rule"
+            else:
+                range_top = {"id": "win_back:none", "insight_id": None, "insight_rank": 0, "screen": "", "screen_label": "a tracked step",
+                             "people": 0, "sessions": 0, "states": [{"id": k, "label": label, "people": 0, "share": None} for k, label in
+                                                                           (("never_returned", "Never returned"), ("returned_not_finished", "Returned, didn't finish"),
+                                                                            ("returned_finished", "Returned and finished"))],
+                             "title": "No stalled audience in this time range", "advice": "Choose a wider time range to see a matching audience.",
+                             "finished_by_journey": {}, "definition": "No matching people in this time range.", "source": "calculated", "text_source": "rule"}
+            by_range[range_id] = {"top": range_top, "by_insight": range_rows}
 
     # ---- behaviour facts per person
     buys, topups, send_money = {}, {}, {}
@@ -299,7 +333,7 @@ def audience_blocks(cx: Ctx, pin_otp: bool = True) -> tuple:
     block = {
         "source": "calculated", "text_source": "rule", "synthetic": True, "as_of": cx.as_of, "observed_until": cx.obs_end.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "active_users": n_active, "active_definition": "People with at least one session in the 30-day sample, outside the two hidden user groups.",
-        "win_back": {"top": top, "by_insight": wb}, "cards": cards,
+        "win_back": {"top": top, "by_insight": wb, **({"by_range": by_range} if by_range else {})}, "cards": cards,
         "signals": {"return_visits": ret, "repeat_purchases": rep, "lifetime_value": ltv},
         "segments": segments, "gaps": gaps,
     }
@@ -529,8 +563,9 @@ def build(a: dict) -> dict:
             scoped_insights = [i for i in a["insights"]
                                if (not i["persona_ids"] or selected is None or bool(selected.intersection(i["persona_ids"])))
                                and (platform == "all" or not i.get("platform_ids") or platform in i["platform_ids"])]
+            range_insight_ids = {rng: a["results"]["views"].get(f"{rng}|{platform}|{persona}", {}).get("insight_ids", []) for rng in RANGE_WINDOWS}
             scoped = dict(a, clean=scoped_clean, all_s=platform_all, insights=scoped_insights)
-            block, _ = audience_blocks(Ctx(scoped), pin_otp=(persona == "all"))
+            block, _ = audience_blocks(Ctx(scoped), pin_otp=(persona == "all"), range_insight_ids=range_insight_ids)
             audience_scopes[f"{platform}|{persona}"] = block
     aud["scopes"] = audience_scopes
     watch, watch_rows = watch_block(cx)

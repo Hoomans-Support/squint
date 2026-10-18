@@ -42,7 +42,7 @@ class Component extends DCLogic {
       const isSel = sc.platform === id;
       return {
         label: cap(id), disabled: !has, selected: isSel, reason: has ? '' : 'No ' + id + ' events in this sample',
-        style: 'display: flex; align-items: center; gap: 12px; width: 100%; min-height: 40px; padding: 0 16px; border: 0; background: '
+        style: 'display: flex; align-items: center; gap: 12px; width: 100%; height: 36px; min-height: 36px; padding: 0 16px; border: 0; background: '
           + (isSel ? '#E8F0FE' : 'transparent') + '; font-family: inherit; font-size: 14px; text-align: left; cursor: ' + (has ? 'pointer' : 'not-allowed')
           + '; color: ' + (isSel ? '#174EA6' : '#202124') + '; font-weight: ' + (isSel ? '600' : '400') + '; transition: background-color .15s ease',
         pick: has ? pick({ platform: isSel ? 'all' : id }) : () => {}, fk: 'opt-' + id

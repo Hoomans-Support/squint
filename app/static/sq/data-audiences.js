@@ -14,7 +14,11 @@
     const root = SQ.data.audiences;
     const A = root.scopes && root.scopes[SQ.scope.platform + '|' + SQ.scope.persona];
     if (!A) throw new Error('Missing Audiences results for scope ' + SQ.scope.platform + '|' + SQ.scope.persona);
-    const top = A.win_back.top;
+    const rangeWinBack = (A.win_back.by_range || {})[SQ.scope.range];
+    const visibleInsightIds = new Set(SQ.view().insight_ids);
+    const visibleCandidates = (A.win_back.by_insight || []).filter((candidate) => visibleInsightIds.has(candidate.insight_id) && candidate.people > 0);
+    const winBack = rangeWinBack || (visibleCandidates.length ? { ...A.win_back, top: visibleCandidates[0] } : A.win_back);
+    const top = winBack.top;
     const states = top.states.map((s, i) => ({
       label: s.label, people: n(s.people), width: (s.share * 100).toFixed(2) + '%',
       color: ['#1A73E8', '#F9AB00', '#1E8E3E'][i] || '#5F6368'

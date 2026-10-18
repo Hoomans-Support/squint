@@ -242,7 +242,7 @@ def main():
         check("all configured journey tabs render", count == expected_tabs)
         for i in range(count):
             tabs.nth(i).click(); pause(page)
-            check(f"journey tab {i + 1} selects", tabs.nth(i).get_attribute("aria-pressed") == "true")
+            check(f"journey tab {i + 1} selects", tabs.nth(i).get_attribute("aria-selected") == "true")
         strips = page.locator('[aria-label="Issues in this journey"] [role="tab"]')
         if strips.count() > 1:
             strips.nth(1).click(); pause(page)
@@ -425,8 +425,15 @@ def main():
 
         print("-- Audiences, Data sources, widths, populated and empty scopes")
         route(page, "Audiences")
-        page.evaluate("SQ.setScope({platform: 'all', persona: 'all'})"); pause(page)
+        page.evaluate("SQ.setScope({platform: 'all', persona: 'all', range: '30d'})"); pause(page)
         all_audiences = page.evaluate("JSON.stringify({total: SQ.audienceModel().total, cards: SQ.audienceModel().cards.map(c => c.people), top: SQ.audienceModel().topPeople})")
+        page.evaluate("SQ.setScope({range: '24h'})"); pause(page)
+        short_range_audience = page.evaluate("JSON.stringify({top: SQ.audienceModel().topPeople, states: SQ.audienceModel().topStates.map(s => s.people)})")
+        page.evaluate("SQ.setScope({range: '30d'})"); pause(page)
+        top_range_check = page.evaluate("JSON.stringify({top: SQ.audienceModel().topPeople, states: SQ.audienceModel().topStates.map(s => s.people)})")
+        check("featured win-back counts differ by date range", short_range_audience != top_range_check)
+        legend_layout = page.evaluate("(() => { const a = [...document.getElementsByClassName('sq-behavior-legend-item')].map(e => { const r=e.getBoundingClientRect(); return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}; }); const overlap = a.some((x,i) => a.slice(i+1).some(y => x.x < y.right && x.right > y.x && x.y < y.bottom && x.bottom > y.y)); return {count:a.length, rows:new Set(a.map(x => Math.round(x.y))).size, overlap}; })()")
+        check("behavior legend uses a readable 3-by-2 grid without collisions", legend_layout["count"] == 6 and legend_layout["rows"] == 2 and not legend_layout["overlap"], str(legend_layout))
         page.locator('[data-fk="menu-user"]').click()
         page.locator('input[data-fk="opt-large_business"]').click(force=True); pause(page)
         persona_audiences = page.evaluate("JSON.stringify({total: SQ.audienceModel().total, cards: SQ.audienceModel().cards.map(c => c.people), top: SQ.audienceModel().topPeople})")

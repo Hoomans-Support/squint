@@ -61,6 +61,7 @@
                   </div>
                 </div>
                 <p style="margin: 0; font-size: 13px; color: #5F6368">{{top.evidenceCap}}</p>
+                <template data-sc="if" value="{{hasTrendNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 13px; color: #5F6368">{{trendNote}}</p></template>
               </div>
             </div>
 
@@ -154,7 +155,6 @@
               </div>
             </template>
           </div>
-          <template data-sc="if" value="{{hasTrendNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 13px; color: #5F6368">{{trendNote}}</p></template>
         </section>
 
         <template data-sc="if" value="{{showOthers}}" hint-placeholder-val="{{ true }}">
@@ -162,11 +162,8 @@
           <div class="sq-hover-info">
             <div style="display: flex; align-items: center; gap: 4px; padding: 16px 20px 8px">
               <h2 id="problems" class="h2">{{otherTitle}}</h2>
-              <button type="button" aria-label="What this ranking means" style="width: 20px; height: 20px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; color: #5F6368; font-size: 11px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">i</button>
+              <details class="ds-context"><summary aria-label="About other problems">i</summary><div role="note">This ranks the problems found in the selected date range by how often they occur and their estimated weekly impact. Select a row to see the evidence and recommended next step.</div></details>
               <span class="tag" style="margin-left: 4px">Calculated</span>
-            </div>
-            <div role="note" style="margin: 0 20px 12px; padding: 12px 16px; background: #F8F9FA; border-radius: 8px; font-size: 13px; line-height: 20px; color: #3C4043">
-              Worst problems first — how bad it is, how many people hit it, and how much it's costing. Select a row to see more.
             </div>
           </div>
           <div style="overflow-x: auto; position: relative">
