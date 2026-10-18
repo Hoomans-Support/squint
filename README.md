@@ -2,7 +2,7 @@
 
 An agentic behavior dashboard for AI Builder Cup 2026. It watches product event data, finds the screens and user groups where people struggle, and explains why in plain English.
 
-> **All data in this repo is synthetic.** It was generated to look like a e-wallet app. Nothing here comes from real users, and the dashboard, deck and video say so.
+> **All data in this repo is synthetic.** It was generated to look like an e-wallet app. Nothing here comes from real users, and the dashboard, deck and video say so.
 
 Live demo (public, synthetic data only): https://squint.web.app
 
