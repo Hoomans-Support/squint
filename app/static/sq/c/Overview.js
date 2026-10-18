@@ -142,7 +142,7 @@ class Component extends DCLogic {
     const total = ex ? defs.reduce((a, d) => a + (ex[d.key] || 0), 0) : 0;
     const parts = defs.map((d) => {
       const n = ex ? (ex[d.key] || 0) : 0, f = total ? n / total : 0;
-      return { ...d, n, f, w: (f * 100) + '%', pct: Math.round(f * 100) + '%', isNatural: d.key === 'natural', isCause: d.key !== 'natural' };
+      return { ...d, n, f, w: (f * 100) + '%', pct: (f * 100).toFixed(1) + '%', isNatural: d.key === 'natural', isCause: d.key !== 'natural' };
     });
     const exits = {
       has: total > 0, none: total === 0,
