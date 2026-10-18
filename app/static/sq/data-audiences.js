@@ -51,7 +51,7 @@
       label: s.label, people: n(s.people), share: s.pct + '%', width: (s.share || 0) * 100 + '%',
       color: segColor[s.id] || '#5F6368'
     }));
-    const d = (days, key, i) => ({ days, label: days + ' days', rate: pct(rv[key].rate), height: rv[key].rate == null ? '0px' : (rv[key].rate * 96).toFixed(1) + 'px', color: ['#8AB4F8', '#669DF6', '#1A73E8'][i] });
+    const d = (days, key, i) => ({ days, label: days + (days === 1 ? ' day' : ' days'), rate: pct(rv[key].rate), height: rv[key].rate == null ? '0px' : (rv[key].rate * 96).toFixed(1) + 'px', color: ['#8AB4F8', '#669DF6', '#1A73E8'][i] });
     return {
       total: n(A.active_users), topPeople: n(top.people), topScreen: top.screen_label, topInsightId: top.insight_id,
       topTitle: top.title, topAdvice: top.advice, topStates: states,
@@ -70,6 +70,9 @@
     const silent = (h.trackers.silent || []).map((s) => s.title).join('; ');
     const app = connected.app_tracker, steps = connected.journey_steps, match = h.events_matched;
     const tables = D.backend_sample.tables.map((t) => ({ name: t.table, rows: n(t.rows), description: t.description }));
+    const unmappedFault = ((SQ.data.guardian || {}).faults || []).find((f) => f.guardian_kind === 'unmapped');
+    const unmappedProp = unmappedFault ? unmappedFault.title.replace(/^Unmapped property /, '') : null;
+    const unmappedSince = unmappedFault && unmappedFault.start ? new Date(unmappedFault.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
     const health = [
       { label: 'Event volume', value: (change > 0 ? '+' : '') + (change * 100).toFixed(1) + '%', note: 'vs ' + h.event_volume.compared_with, color: '#1E8E3E' },
       { label: 'Events matched', value: pct(match.share), note: n(match.unmatched_events) + ' events need review', color: '#1E8E3E' },
@@ -82,7 +85,9 @@
       synthetic: D.synthetic && app.synthetic && D.backend_sample.synthetic,
       dataset: app.dataset, tableDataset: D.backend_sample.dataset, location: D.backend_sample.location,
       locked: signals.filter((s) => s.status === 'Needs backend').length,
-      eventsMatchedPct: pct(match.share), eventsUnmatched: n(match.unmatched_events)
+      eventsMatchedPct: pct(match.share), eventsUnmatched: n(match.unmatched_events),
+      eventsTotal: n(match.events), eventsMatched: n(match.events - match.unmatched_events),
+      unmappedProp, unmappedSince
     };
   };
 })();

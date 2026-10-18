@@ -65,23 +65,65 @@
   };
   SQ.insight = (id) => SQ.data.insights.find((i) => i.id === id);
   /* ---- "mark fixed": a visitor's own session-local note that a finding no longer needs attention. Kept in
-     sessionStorage only (like Ask history), never sent anywhere, so it never hides a finding for anyone else. ---- */
+     sessionStorage only (like Ask history), never sent anywhere, so it never hides a finding for anyone else.
+     Stored as {id: isoDate} (not a plain id list) so the fixed date can be shown later. ---- */
   const FIXED_KEY = 'sq.fixedIds';
-  let fixedIds = new Set();
-  try { fixedIds = new Set(JSON.parse(sessionStorage.getItem(FIXED_KEY) || '[]')); } catch (_) { /* session-only, starts empty if storage is unavailable */ }
-  SQ.isFixed = (id) => fixedIds.has(id);
+  let fixedMap = {};
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(FIXED_KEY) || '{}');
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) fixedMap = saved;
+  } catch (_) { /* session-only, starts empty if storage is unavailable */ }
+  SQ.isFixed = (id) => Object.prototype.hasOwnProperty.call(fixedMap, id);
+  SQ.fixedDate = (id) => fixedMap[id] || null;
   SQ.markFixed = (id) => {
-    fixedIds.add(id);
-    try { sessionStorage.setItem(FIXED_KEY, JSON.stringify([...fixedIds])); } catch (_) { /* this mark lasts for this visit only */ }
+    fixedMap[id] = new Date().toISOString();
+    try { sessionStorage.setItem(FIXED_KEY, JSON.stringify(fixedMap)); } catch (_) { /* this mark lasts for this visit only */ }
+    SQ.toast('Marked fixed');
     SQ.redraw();
+  };
+
+  /* ---- "ticket created": same session-local, {id: isoDate} mechanism as Mark fixed above, so the
+     drafted-ticket button still shows "Ticket created" after a reload in this tab. Unlike Mark fixed
+     this never changes a finding's open/fixed status — it only remembers the button's own state. ---- */
+  const CREATED_KEY = 'sq.createdTicketIds';
+  let createdMap = {};
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(CREATED_KEY) || '{}');
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) createdMap = saved;
+  } catch (_) { /* session-only, starts empty if storage is unavailable */ }
+  SQ.isTicketCreated = (id) => Object.prototype.hasOwnProperty.call(createdMap, id);
+  SQ.markTicketCreated = (id) => {
+    createdMap[id] = new Date().toISOString();
+    try { sessionStorage.setItem(CREATED_KEY, JSON.stringify(createdMap)); } catch (_) { /* this mark lasts for this visit only */ }
+    SQ.redraw();
+  };
+
+  /* ---- a brief confirmation toast, outside the app's own render tree so it survives the redraw a caller
+     like markFixed triggers right after showing it. ---- */
+  let toastTimer = null;
+  SQ.toast = (msg) => {
+    const el = document.getElementById('sq-toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
   };
   /* the open problems for the current scope, worst first (critical, then warning), with a stable priority label P1, P2, ... */
   SQ.problems = () => {
     const order = { critical: 0, warning: 1, healthy: 2 };
-    const all = SQ.data.insights.filter((i) => i.severity !== 'healthy' && !fixedIds.has(i.id)).slice().sort((a, b) => (order[a.severity] - order[b.severity]) || ((b.impact || {}).score || 0) - ((a.impact || {}).score || 0));
+    const all = SQ.data.insights.filter((i) => i.severity !== 'healthy' && !SQ.isFixed(i.id)).slice().sort((a, b) => (order[a.severity] - order[b.severity]) || ((b.impact || {}).score || 0) - ((a.impact || {}).score || 0));
     all.forEach((i, k) => { i.__p = 'P' + (k + 1); });
     const inView = new Set(SQ.view().insight_ids);
     return all.filter((i) => inView.has(i.id));
+  };
+  /* fixed findings for the current scope, most recently fixed first — shown greyed out at the bottom of
+     "Other problems" instead of disappearing, but excluded from SQ.problems() so they don't count as open. */
+  SQ.fixedProblems = () => {
+    const inView = new Set(SQ.view().insight_ids);
+    return SQ.data.insights
+      .filter((i) => i.severity !== 'healthy' && SQ.isFixed(i.id) && inView.has(i.id))
+      .sort((a, b) => (SQ.fixedDate(b.id) || '').localeCompare(SQ.fixedDate(a.id) || ''));
   };
   SQ.asOf = () => { const d = new Date(SQ.data.meta.as_of + 'T00:00:00Z'); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); };
   SQ.rangeDates = () => {

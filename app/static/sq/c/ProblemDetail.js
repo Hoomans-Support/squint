@@ -35,24 +35,36 @@ class Component extends DCLogic {
       has: true, none: false, outerStyle, innerStyle, m, r, conf0: conf[0], conf1: conf[1], conf2: conf[2],
       hasNav: m.hasNav, prev: () => go(-1), next: () => go(1),
       hasSub: !!m.sub,
-      hasWatch: ((SQ.watchFor(i.id) || {}).sessions || []).length > 0,
       close,
+      // only redundant inside the Journeys popup (hero's own Watch sessions, and the Biggest leak
+      // actions menu, are both right there); the standalone drawer (ProblemDetailP2/P3, and
+      // SessionPlayer's "Open the finding") has no other way in, so it keeps the button
+      hasWatch: !modal && ((SQ.watchFor(i.id) || {}).sessions || []).length > 0,
       watch: () => { SQ.state.watchInsight = i.id; SQ.go('SessionPlayer'); },
       // session-local only, same mechanism as the Journeys "Biggest leak" menu (SQ.markFixed/SQ.isFixed)
       hasMarkFixed: !m.healthy, markFixed: () => { SQ.markFixed(i.id); close(); },
-      ticketOpen, ticketClosed: !ticketOpen,
+      ticketOpen, ticketOpenStr: ticketOpen ? 'true' : 'false',
       toggleTicket: () => SQ.keepFocus(() => { SQ.state.ticketOpen = !SQ.state.ticketOpen; this.state.copied = false; SQ.redraw(); }),
-      // stage 1 (the finding drawer): reason, ruled-out causes, caveat, and who it's assigned to
+      // the finding drawer's own content: reason, the AI's weighted causes, ruled-out causes, caveat,
+      // and who it's assigned to; the drafted ticket (below) opens inline without replacing any of this
       reasonTag: r.whyTag, reasonCls: r.whyTagCls, reason: m.reason,
+      // only worth a separate line when more than one cause is sharing the blame; a single cause is
+      // already said in the "Likely reason" sentence above
+      hasRuledIn: m.ruledIn.length > 1, ruledIn: m.ruledIn,
       ruledOutLabel: r.whyTag === 'AI' ? 'Ruled out by the AI' : 'Ruled out',
       hasRuledOut: m.ruledOut.length > 0, ruledOut: m.ruledOut,
       hasCaveat: m.caveats.length > 0, caveat: m.caveats.join(' '),
       ownerSel, ownerOptions, setOwner: (e) => this.setState({ owner: e.target.value }),
-      // stage 2 (the drafted ticket): team, priority, condensed cause/evidence, sample sessions, plus Copy/Download for the full text
+      // the drafted ticket: team, priority, condensed cause/evidence, sample sessions, plus Copy/Download for the full text
       team: SQ.ownerOf(i), ticketPriority: (i.__p ? i.__p + ' · ' : '') + r.sev,
       hasEvidenceLines: evidenceLines.length > 0, evidenceLines,
       hasSessions: sessions.length > 0, sessions,
       ticket: m.ticket, ticketFile: SQ.ticketFile(i),
+      // session-local, same mechanism and persistence as Mark fixed (SQ.markFixed/SQ.isFixed): survives
+      // a reload in this tab, and keyed by insight id so Next/Previous or reopening via a different
+      // trigger still shows an already-created finding as created
+      created: SQ.isTicketCreated(i.id), notCreated: !SQ.isTicketCreated(i.id),
+      markCreated: () => SQ.keepFocus(() => SQ.markTicketCreated(i.id)),
       copy: () => {
         let ok = false;
         const done = (v) => SQ.keepFocus(() => { this.setState({ copied: v ? 'Copied to the clipboard' : 'Copy is blocked here. Select the text and copy it by hand.' }); });

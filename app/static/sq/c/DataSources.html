@@ -11,6 +11,18 @@
   .ds-flip-face { grid-area: 1 / 1; width: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
   .ds-flip-back { transform: rotateY(180deg); }
   @media (prefers-reduced-motion: reduce) { .ds-flip-card { transition: none; } }
+  @keyframes ds-fade-in-left { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+  .ds-map-anim .ds-map-rows > div { opacity: 0; animation: ds-fade-in-left .45s ease-out forwards; }
+  .ds-map-anim .ds-map-rows > div:nth-child(1) { animation-delay: 0s; }
+  .ds-map-anim .ds-map-rows > div:nth-child(2) { animation-delay: .1s; }
+  .ds-map-anim .ds-map-rows > div:nth-child(3) { animation-delay: .2s; }
+  .ds-map-anim .ds-map-arrow { opacity: 0; animation: ds-fade-in-left .45s ease-out .32s forwards; }
+  .ds-map-anim .ds-map-wallet { opacity: 0; animation: ds-fade-in-left .45s ease-out .42s forwards; }
+  @media (prefers-reduced-motion: reduce) { .ds-map-anim .ds-map-rows > div, .ds-map-anim .ds-map-arrow, .ds-map-anim .ds-map-wallet { animation: none; opacity: 1; } }
+  /* Below this width the rows and the wider mockup wrap onto separate lines (flex-wrap), which
+     strands the connecting arrow at the end of the rows' line pointing at nothing - hide it rather
+     than let it float disconnected. */
+  @media (max-width: 1260px) { .ds-map-arrow { display: none !important; } }
 </style>
 <div style="min-height: 100vh; background: #F8F9FA; color: #202124; font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px">
   <dc-import name="TopBar" hint-size="100%,64px"></dc-import>
@@ -38,8 +50,8 @@
             <h2 id="mapping" class="h2">See the mapping on your own screens</h2>
             <span class="tag" style="background: #FEF7E0; color: #B06000">Concept</span>
           </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: stretch">
-            <div style="flex: 1 1 380px; display: flex; flex-direction: column; justify-content: space-between; max-width: 420px">
+          <div class="{{mapAnimClass}}" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+            <div class="ds-map-rows" style="flex: 1 1 380px; display: flex; flex-direction: column; justify-content: space-between; max-width: 420px">
               <div style="display: flex; align-items: center; gap: 14px">
                 <span style="flex: 1; font-family: 'Courier New', monospace; font-size: 12px; background: #F1F3F4; color: #3C4043; padding: 8px 12px; border-radius: 6px">tap:confirm_btn</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
@@ -56,45 +68,48 @@
                 <span class="chip" style="background: #E8F0FE; color: #174EA6; flex: none; height: 28px; font-size: 13px">Top-up amount</span>
               </div>
             </div>
-            <div style="flex: 1 1 280px; max-width: 360px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; box-sizing: border-box; box-shadow: 0 2px 10px rgba(60,64,67,.12); overflow: hidden">
-              <div style="height: 32px; background: #F1F3F4; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid #DADCE0">
-                <span style="width: 9px; height: 9px; border-radius: 5px; background: #DADCE0"></span>
-                <span style="width: 9px; height: 9px; border-radius: 5px; background: #DADCE0"></span>
-                <span style="width: 9px; height: 9px; border-radius: 5px; background: #DADCE0"></span>
-                <span style="flex: 1; height: 18px; margin-left: 8px; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; padding: 0 10px; font-size: 10px; color: #5F6368; font-family: 'Courier New', monospace">wallet.app/topup</span>
+            <div class="ds-map-arrow" style="flex: none; display: flex; align-items: center; justify-content: center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+            </div>
+            <div class="ds-map-wallet" style="flex: 1 1 380px; max-width: 480px; border-radius: 10px; border: 1px solid #DADCE0; background: #FFFFFF; box-sizing: border-box; box-shadow: 0 2px 10px rgba(60,64,67,.12); overflow: hidden">
+              <div style="height: 18px; background: #F1F3F4; display: flex; align-items: center; gap: 6px; padding: 0 10px; border-bottom: 1px solid #DADCE0">
+                <span style="width: 7px; height: 7px; border-radius: 4px; background: #DADCE0"></span>
+                <span style="width: 7px; height: 7px; border-radius: 4px; background: #DADCE0"></span>
+                <span style="width: 7px; height: 7px; border-radius: 4px; background: #DADCE0"></span>
+                <span style="flex: 1; height: 12px; margin-left: 6px; border-radius: 6px; background: #FFFFFF; display: flex; align-items: center; padding: 0 8px; font-size: 8px; line-height: 1; color: #5F6368; font-family: 'Courier New', monospace">wallet.app/topup</span>
               </div>
-              <div style="padding: 12px; display: flex; flex-direction: column; gap: 6px">
+              <div style="padding: 6px 8px; display: flex; flex-direction: column; gap: 3px">
                 <div>
-                  <div style="font-size: 10px; color: #5F6368">Wallet</div>
-                  <h3 style="margin: 1px 0 0; font-size: 15px; line-height: 20px; font-weight: 500; color: #202124">Top up</h3>
+                  <div style="font-size: 7px; line-height: 1; color: #5F6368">Wallet</div>
+                  <h3 style="margin: 1px 0 0; font-size: 11px; line-height: 13px; font-weight: 500; color: #202124">Top up</h3>
                 </div>
-                <div style="padding: 6px 10px; border-radius: 7px; background: #F8F9FA; font-size: 11px; color: #5F6368">Available balance <span style="color: #202124; font-weight: 500">₱2,480</span></div>
-                <label style="display: flex; flex-direction: column; gap: 2px">
-                  <span style="font-size: 10px; color: #5F6368">Amount</span>
-                  <span style="height: 28px; border-radius: 7px; border: 1px solid #DADCE0; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: #202124">₱500</span>
+                <div style="padding: 3px 6px; border-radius: 5px; background: #F8F9FA; font-size: 8px; line-height: 1.3; color: #5F6368">Available balance <span style="color: #202124; font-weight: 500">₱2,480</span></div>
+                <label style="display: flex; flex-direction: column; gap: 1px">
+                  <span style="font-size: 7px; line-height: 1; color: #5F6368">Amount</span>
+                  <span style="height: 14px; border-radius: 5px; border: 1px solid #DADCE0; display: flex; align-items: center; padding: 0 6px; font-size: 9px; color: #202124">₱500</span>
                 </label>
-                <label style="display: flex; flex-direction: column; gap: 2px">
-                  <span style="font-size: 10px; color: #5F6368">OTP code</span>
-                  <span style="display: flex; gap: 5px">
-                    <span style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid #DADCE0"></span>
-                    <span style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid #DADCE0"></span>
-                    <span style="width: 28px; height: 28px; border-radius: 6px; border: 2px solid #1A73E8; background: #E8F0FE"></span>
-                    <span style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid #DADCE0"></span>
+                <label style="display: flex; flex-direction: column; gap: 1px">
+                  <span style="font-size: 7px; line-height: 1; color: #5F6368">OTP code</span>
+                  <span style="display: flex; gap: 3px">
+                    <span style="width: 14px; height: 14px; border-radius: 4px; border: 1px solid #DADCE0"></span>
+                    <span style="width: 14px; height: 14px; border-radius: 4px; border: 1px solid #DADCE0"></span>
+                    <span style="width: 14px; height: 14px; border-radius: 4px; border: 2px solid #1A73E8; background: #E8F0FE"></span>
+                    <span style="width: 14px; height: 14px; border-radius: 4px; border: 1px solid #DADCE0"></span>
                   </span>
                 </label>
-                <div style="align-self: flex-start; height: 30px; padding: 0 18px; border-radius: 15px; background: #1A73E8; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500">Confirm</div>
+                <div style="align-self: flex-start; height: 16px; padding: 0 10px; border-radius: 8px; background: #1A73E8; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 500">Confirm</div>
               </div>
             </div>
           </div>
           <div class="ds-flip-stage" style="border-top: 1px solid #F1F3F4; padding-top: 16px">
             <div class="ds-flip-card" style="transform: {{flipTransform}}">
-              <button type="button" class="ds-flip-face" data-fk="ds-today" onClick="{{toggleFuture}}" aria-label="Flip to see the future vision" style="border: 0; margin: 0; font: inherit; color: inherit; text-align: left; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 8px; background: #F8F9FA">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#137333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+              <button type="button" class="ds-flip-face" data-fk="ds-today" onClick="{{toggleFuture}}" aria-label="Flip to see the future vision" style="border: 0; margin: 0; font: inherit; color: inherit; text-align: left; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: 8px; background: #F8F9FA">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#137333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
                 <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
                   <span style="font-weight: 500; font-size: 13px; color: #202124">Today</span>
-                  <span class="cap">Squint already matches {{eventsMatchedPct}} of raw events to journey steps automatically. {{eventsUnmatched}} still need a human look.</span>
+                  <span class="cap">Squint matches {{eventsMatched}} of {{eventsTotal}} raw events ({{eventsMatchedPct}}) to {{stepsMatched}} of {{stepsTotal}} steps automatically. The {{eventsUnmatched}} that don't share one gap — an unmapped <span style="font-family: 'Courier New', monospace">{{unmappedProp}}</span> property since {{unmappedSince}}, set aside, not lost.</span>
                 </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none" aria-hidden="true"><path d="M3 10a7 7 0 0 1 12-5M17 5v4h-4"></path><path d="M17 14a7 7 0 0 1-12 5M3 19v-4h4"></path></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px" aria-hidden="true"><path d="M3 10a7 7 0 0 1 12-5M17 5v4h-4"></path><path d="M17 14a7 7 0 0 1-12 5M3 19v-4h4"></path></svg>
               </button>
               <button type="button" class="ds-flip-face ds-flip-back" onClick="{{toggleFuture}}" aria-label="Flip back to today" style="margin: 0; font: inherit; color: inherit; text-align: left; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 8px; background: #F8F9FA; border: 1px dashed #DADCE0">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
@@ -104,7 +119,7 @@
                   </div>
                   <span class="tag">Not in this demo</span>
                 </div>
-                <p style="margin: 0; font-size: 12px; color: #5F6368; text-align: left">Submit a screenshot of a real screen, and Squint will spot every tappable element, suggest the journey step it matches, and let you confirm or correct each guess — no manual mapping spreadsheet.</p>
+                <p style="margin: 0; font-size: 12px; color: #5F6368; text-align: left">Today, each screen is mapped to a step by hand, one event name at a time. Submit a screenshot instead — Squint spots every element, suggests its step, you confirm or correct.</p>
               </button>
             </div>
           </div>

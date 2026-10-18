@@ -189,8 +189,9 @@
   };
 
   /* The ticket draft content only (no finding-drawer chrome: no nav, no close button, no Owner picker),
-     for inline use on a page's own card (Overview, Journeys) instead of the slide-over drawer. The host
-     component supplies its own copy/download handlers (they need its own setState for the "copied" status). */
+     for inline use on a page's own card (Overview's Draft ticket) instead of the slide-over drawer. The
+     host component supplies its own copy/download handlers (they need its own setState for the "copied"
+     status). Journeys' hero ("See why") opens the real drawer instead and does not use this. */
   SQ.ticketCardModel = (i) => {
     const m = SQ.drawerModel(i);
     const r = m.rec;
@@ -205,7 +206,7 @@
       reasonTag: r.whyTag, reasonCls: r.whyTagCls, reasonWhy: r.why,
       hasEvidenceLines: evidenceLines.length > 0, evidenceLines,
       hasSessions: sessions.length > 0, sessions,
-      // only shown by hosts that opt in (Journeys' "Let's figure it out"), not Overview's plain ticket
+      // only shown by hosts that opt in; Overview's own ticket card does not render these
       ruledOutLabel: r.whyTag === 'AI' ? 'Ruled out by the AI' : 'Ruled out',
       hasRuledOut: m.ruledOut.length > 0, ruledOut: m.ruledOut,
       hasNext: m.next.length > 0, next: m.next,

@@ -14,6 +14,13 @@ class Component extends DCLogic {
       if (fk) setTimeout(() => { const el = document.querySelector('[data-fk="' + fk + '"]'); if (el) el.focus(); }, 0);
     };
 
+    // Re-rendering replaces the DOM (see above), so the modal's wrapper div is recreated on every
+    // redraw while it's open too (Draft ticket, Owner, Create ticket all call setState somewhere
+    // inside it) — only play the slide-in animation on the render where it actually opens.
+    const modalOpenNow = !!SQ.state.ticketModalOpen;
+    const modalJustOpened = modalOpenNow && !this.__modalWasOpen;
+    this.__modalWasOpen = modalOpenNow;
+
     // ---------- Journey data, all counted from results.json (see data-journeys.js) ----------
     const MODEL = SQ.journeyModel();
     if (!this.__init) {
@@ -68,7 +75,6 @@ class Component extends DCLogic {
     const stepNames = raw.map((r) => r[0]);
     const focus = I.step;
     const focusStep = JD.steps[focus] || JD.steps[0];
-    const heroTicketOpen = I.route === 'ProblemDetail' && this.state.heroTicketFor === I.insightId;
     const hero = {
       n: cur + 1, stripName: I.short,
       rankLabel: (cur === 0 ? 'Biggest leak in this journey' : `${cur + 1} of ${ISSUES.length} in this journey`) + (I.pid ? ' · problem ' + I.pid : (I.key === 'none' ? '' : ' · risk, not yet a problem')),
@@ -85,34 +91,17 @@ class Component extends DCLogic {
       whyLowConf: I.whyTag === 'AI · low confidence',
       hasWho: (I.whoVals || []).length > 0 && I.whoTick != null, whoMeasure: I.whoMeasure, whoTick: I.whoTick != null ? I.whoTick.toFixed(1) + '%' : '',
       tickPos: I.whoTick != null ? Math.min(100, I.whoTick / I.whoMax * 100).toFixed(1) + '%' : '0%', whoRows,
-      primary: I.route === 'ProblemDetail' ? "Let's figure it out" : I.primary, primaryIsDraft: I.route === 'ProblemDetail',
-      // Draft ticket shows inline under this button (no drawer, no route change); any other route navigates as before
-      ticketOpen: heroTicketOpen, ticketClosed: !heroTicketOpen,
+      // See why opens the full finding drawer as a popup (Likely reason, Ruled out, then Draft
+      // ticket one level deeper inside it); any other route navigates as before
+      primary: I.route === 'ProblemDetail' ? 'See why' : I.primary,
+      primaryBtnClass: I.route === 'ProblemDetail' ? 'btn-tonal' : 'btn-filled',
+      hasWatch: !!I.hasWatch,
+      watch: () => { SQ.state.watchInsight = I.insightId; SQ.go('SessionPlayer'); },
       openPrimary: () => {
         if (I.route !== 'ProblemDetail') { SQ.go(I.route); return; }
-        this.setState({ heroTicketFor: heroTicketOpen ? null : I.insightId, copied: '' });
-        SQ.refocus(heroTicketOpen ? 'hero-draft' : 'ticket-hero');
+        SQ.openTicketModal(I.insightId);
       }
     };
-    if (heroTicketOpen) {
-      const insIns = SQ.insight(I.insightId);
-      const c = SQ.ticketCardModel(insIns);
-      Object.assign(hero, {
-        ticket: {
-          ...c,
-          copy: () => {
-            let ok = false;
-            const done = (v) => this.setState({ copied: v ? 'Copied to the clipboard' : 'Copy is blocked here. Select the text and copy it by hand.' });
-            try { navigator.clipboard.writeText(c.ticket).then(() => done(true), () => done(false)); ok = true; } catch (e) { /* fall through */ }
-            if (!ok) done(false);
-          },
-          download: () => this.setState({ copied: SQ.downloadText(c.ticketFile, c.ticket) ? 'Downloaded ' + c.ticketFile : 'The download is blocked here.' }),
-          close: () => { this.setState({ heroTicketFor: null, copied: '' }); SQ.refocus('hero-draft'); },
-          markFixed: () => { c.markFixed(); this.setState({ heroTicketFor: null, copied: '' }); },
-          copied: this.state.copied || ''
-        }
-      });
-    }
 
     // ---- "Biggest leak in this journey" link: why-trust popup and a quick-action menu, both about ISSUES[0]
     //      specifically (the overall top issue), regardless of which issue is currently selected above ----
@@ -172,11 +161,11 @@ class Component extends DCLogic {
       });
       const marks = [];
       rs.marks.forEach((m) => {
-        if (m[0] === 'rage') marks.push(`left: ${x(m[1])}%; top: 14px; width: max(3px, ${(x(m[2]) - x(m[1])).toFixed(2)}%); height: 16px; border-radius: 1px; background: #D93025`);
-        else if (m[0] === 'idle') marks.push(`left: ${x(m[1])}%; top: 22px; width: ${(x(m[2]) - x(m[1])).toFixed(2)}%; height: 0; border-top: 2px dotted #9AA0A6`);
-        else if (m[0] === 'tap') marks.push(`left: ${x(m[1])}%; top: 17px; width: 2px; height: 10px; background: #9AA0A6`);
-        else if (m[0] === 'back') marks.push(`left: ${x(m[1])}%; top: 17px; width: 10px; height: 10px; margin-left: -5px; border-radius: 5px; background: #1A73E8`);
-        else marks.push(`left: ${x(m[1])}%; top: 16px; width: 12px; height: 12px; margin-left: -6px; border-radius: 2px; background: #202124`);
+        if (m[0] === 'rage') marks.push(`left: ${x(m[1])}%; top: 22px; width: max(3px, ${(x(m[2]) - x(m[1])).toFixed(2)}%); height: 16px; border-radius: 1px; background: #D93025`);
+        else if (m[0] === 'idle') marks.push(`left: ${x(m[1])}%; top: 30px; width: ${(x(m[2]) - x(m[1])).toFixed(2)}%; height: 0; border-top: 2px dotted #9AA0A6`);
+        else if (m[0] === 'tap') marks.push(`left: ${x(m[1])}%; top: 25px; width: 2px; height: 10px; background: #9AA0A6`);
+        else if (m[0] === 'back') marks.push(`left: ${x(m[1])}%; top: 25px; width: 10px; height: 10px; margin-left: -5px; border-radius: 5px; background: #1A73E8`);
+        else marks.push(`left: ${x(m[1])}%; top: 24px; width: 12px; height: 12px; margin-left: -6px; border-radius: 2px; background: #202124`);
       });
       const ticks = []; for (let t = 0; t <= axis; t += 30) ticks.push(t + 's');
       replay = { has: true, who: rs.who, outcome: rs.outcome, bands: bandsR, marks: marks.map((st) => ({ st })), ticks: ticks.map((t) => ({ t })), tickCols: `repeat(${ticks.length - 1}, 1fr) auto`, aria: `Timeline of one stuck session, ${rs.outcome.toLowerCase()}: ` + rs.bands.map((b) => `${b[2]} from ${b[0]} to ${b[1]} seconds`).join(', ') + '.' };
@@ -402,7 +391,7 @@ class Component extends DCLogic {
       pcOpen: !!this.state.pcOpen, pcToggle: (e) => { this.state.pcOpen = e.target.open; },
       stopPcInfo: (e) => { e.preventDefault(); e.stopPropagation(); },
       productNote: 'Counted over the whole sample, not filtered by the scope bar. Red marks ' + PC_DIMS[pcDim][1].toLowerCase() + ' rows 9.5 points or more below the average of ' + (PC.avg * 100).toFixed(0) + '%.',
-      ticketModalOpen: !!SQ.state.ticketModalOpen,
+      ticketModalOpen: modalOpenNow, drawerClass: modalJustOpened ? 'sq-drawer-in' : '',
       closeTicketModal: () => SQ.closeTicketModal(),
       stopModal: (e) => e.stopPropagation()
     };

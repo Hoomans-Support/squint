@@ -4,10 +4,13 @@ class Component extends DCLogic {
     const M = SQ.dataSourceModel();
     setTimeout(() => SQ.animateCounts('.ds-count'), 180);
     const showFuture = !!this.state.showFuture;
+    const mapAnimClass = this.mapAnimated ? '' : 'ds-map-anim';
+    this.mapAnimated = true;
     return {
       ...M,
       flipTransform: showFuture ? 'rotateY(180deg)' : 'rotateY(0deg)',
-      toggleFuture: () => this.setState({ showFuture: !showFuture })
+      toggleFuture: () => this.setState({ showFuture: !showFuture }),
+      mapAnimClass
     };
   }
 }

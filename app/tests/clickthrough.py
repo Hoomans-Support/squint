@@ -210,8 +210,11 @@ def main():
                 route(page, "Overview")
                 page.get_by_role("button", name="Draft ticket").first.click(); pause(page)
             else: check("a ticket's attached session opens that exact sample in Watch sessions", True, "this finding has no sampled sessions")
-            page.get_by_role("button", name="Ticket created").click(); pause(page)
-            check("clicking Ticket created closes the inline ticket and restores the Draft ticket button",
+            page.get_by_role("button", name="Create ticket").click(); pause(page)
+            check("clicking Create ticket turns it into a disabled green Ticket created",
+                  page.get_by_role("button", name="Ticket created").is_disabled())
+            page.get_by_role("button", name="Close ticket draft").click(); pause(page)
+            check("the X closes the inline ticket and restores the Draft ticket button",
                   page.locator('[role="region"][aria-label="Ticket draft"]').count() == 0
                   and page.locator('[data-fk="top-draft"]').is_visible())
             check("closing the ticket restores focus to its opener", page.evaluate("document.activeElement.dataset.fk === 'top-draft'"))
@@ -261,18 +264,29 @@ def main():
             disclosures.first.locator("summary").click()
             check("product-completion disclosure expands", disclosures.first.get_attribute("open") is not None)
         else: check("product-completion disclosure expands", False, "disclosure missing")
-        draft_ticket = page.get_by_role("button", name="Let's figure it out")
-        if draft_ticket.count():
+        see_why = page.get_by_role("button", name="See why")
+        if see_why.count():
+            watch_btn = page.get_by_role("button", name="Watch sessions")
+            if watch_btn.count():
+                watch_btn.first.click(); wait_js(page, "location.hash === '#SessionPlayer'")
+                check("Watch sessions beside Journeys' See why opens Watch sessions", page.evaluate("!!SQ.pickInsight('watchInsight')"))
+                route(page, "Journeys")
+                see_why = page.get_by_role("button", name="See why")
+            else: check("Watch sessions beside Journeys' See why", True, "this issue has no sampled sessions")
             before_hash = page.evaluate("location.hash")
-            draft_ticket.first.click(); pause(page)
-            ticket_region = page.locator('[role="region"][aria-label="Ticket draft"]')
-            check("Let's figure it out shows the ticket inline on Journeys, no drawer, no route change",
-                  ticket_region.is_visible()
-                  and not page.evaluate("!!SQ.state.ticketModalOpen")
+            see_why.first.click(); pause(page)
+            check("Journeys' See why opens the finding drawer as a popup, no route change",
+                  page.evaluate("!!SQ.state.ticketModalOpen")
                   and page.evaluate("location.hash") == before_hash)
-            check("the Journeys ticket also shows Mark fixed", page.get_by_role("button", name="Mark fixed").count() >= 1)
-            page.get_by_role("button", name="Ticket created").click(); pause(page)
-        else: check("Let's figure it out shows the ticket inline on Journeys", False, "CTA missing")
+            check("the drawer also shows Mark fixed", page.get_by_role("button", name="Mark fixed").count() >= 1)
+            page.get_by_role("button", name="Draft ticket").click(); pause(page)
+            check("the drawer's Draft ticket advances to the ticket-composition stage",
+                  page.locator('[role="region"][aria-label="Ticket draft"]').is_visible())
+            page.get_by_role("button", name="Create ticket").click(); pause(page)
+            check("Create ticket turns green Ticket created in the Journeys drawer too", page.get_by_role("button", name="Ticket created").is_disabled())
+            page.get_by_role("button", name="Close and go back").click(); pause(page)
+            check("closing the drawer returns to Journeys with no popup left open", not page.evaluate("!!SQ.state.ticketModalOpen"))
+        else: check("Journeys' See why opens the finding drawer", False, "CTA missing")
         route(page, "Journeys")
         top_menu = page.get_by_role("button", name="Biggest leak actions")
         if top_menu.count():
@@ -285,10 +299,9 @@ def main():
         else: check("Watch sessions carries a finding", True, "already viewing the top issue, no biggest-leak menu")
 
         print("-- Finding drawer and session player")
-        # Overview/Journeys' own Draft ticket buttons draft inline now (no drawer); the full finding
-        # drawer (Next/Previous, Watch sessions) is still reachable from Journeys' "Biggest leak actions"
-        # menu (exercised above), which is the only page left that still renders the modal container.
-        # Open it directly here, the same way that menu item does, so this section's own
+        # Overview's own Draft ticket buttons still draft inline (no drawer). Journeys' hero "See why"
+        # and its "Biggest leak actions" menu both open the same full finding drawer (exercised above).
+        # Open it directly here, the same way those triggers do, so this section's own
         # drawer-navigation checks don't depend on which issue was left selected.
         route(page, "Journeys")
         page.evaluate("SQ.openTicketModal(SQ.problems()[0].id)")
@@ -302,13 +315,13 @@ def main():
             check("finding drawer previous cycles back", page.evaluate("SQ.pickInsight('drawerInsight').id") == first_id)
         else:
             check("finding drawer next and previous cycle through problems", problems == 1)
-        watch_button = page.get_by_role("button", name="Watch sessions")
-        if watch_button.count():
-            watch_button.click(); wait_js(page, "location.hash === '#SessionPlayer'"); pause(page)
-        else:
-            check("finding without a sample has no sampled sessions", page.evaluate("!(((SQ.watchFor(SQ.pickInsight('drawerInsight').id) || {}).sessions) || []).length"))
-            page.evaluate("SQ.state.watchInsight = SQ.problems()[0].id; SQ.go('SessionPlayer')")
-            wait_js(page, "location.hash === '#SessionPlayer'"); pause(page)
+        # the drawer's own Watch sessions button is suppressed only inside this Journeys popup (owner:
+        # redundant with the hero-level one beside See why, and the Biggest leak actions menu, both
+        # exercised above); the standalone (non-modal) drawer keeps it, checked further down
+        check("the drawer's popup has no Watch sessions button of its own",
+              page.get_by_role("article").get_by_role("button", name="Watch sessions").count() == 0)
+        page.evaluate("SQ.state.watchInsight = SQ.pickInsight('drawerInsight').id; SQ.go('SessionPlayer')")
+        wait_js(page, "location.hash === '#SessionPlayer'"); pause(page)
         session_rows = page.locator('[aria-label="Sessions"] button.srow')
         if session_rows.count():
             page.get_by_role("button", name=re.compile("Play|Next event")).click(); pause(page)
@@ -331,6 +344,18 @@ def main():
             check("event list can seek the session", events.count() == 1 or (events.count() > 1 and after_seek != before_seek))
         else:
             check("session player shows a clear no-sample fallback when needed", "No sampled sessions for this finding" in text(page))
+
+        # the standalone (non-modal) drawer route — reached directly via ProblemDetailP2/P3 or
+        # SessionPlayer's "Open the finding" — has no hero or Biggest-leak-menu alternative, so unlike
+        # the Journeys popup above it keeps its own Watch sessions button
+        route(page, "ProblemDetail")
+        standalone_watch = page.get_by_role("button", name="Watch sessions")
+        if standalone_watch.count():
+            check("the standalone finding drawer keeps its own Watch sessions button", True)
+        else:
+            check("the standalone finding drawer keeps its own Watch sessions button",
+                  page.evaluate("!(((SQ.watchFor(SQ.pickInsight('drawerInsight').id) || {}).sessions) || []).length"),
+                  "this finding has no sampled sessions")
 
         print("-- Ask and Weekly brief scenarios (local matcher; no Gemini)")
         route(page, "ChatNow")

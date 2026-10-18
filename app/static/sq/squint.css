@@ -4,7 +4,7 @@ body { font-family: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-s
 
 /* AI badges use the same reusable two-part sparkle shape as the inline SVG marks below. */
 :root { --sq-sparkle-shape: url("sparkle.svg"); }
-.tag-ai { position: relative; font-size: 0 !important; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0 !important; vertical-align: middle; color: #1A73E8; }
+.tag-ai { position: relative; font-size: 0 !important; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0 !important; vertical-align: middle; color: #1A73E8; background: transparent; }
 .tag-ai::before { content: ""; display: block; width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--sq-sparkle-shape) center / contain no-repeat; mask: var(--sq-sparkle-shape) center / contain no-repeat; transform-origin: center; transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
 .tag-ai::after { content: none; }
 .ds-context { position: relative; display: inline-flex; flex: 0 0 auto; }
@@ -134,3 +134,9 @@ a:focus-visible .sq-sparkle, button:focus-visible .sq-sparkle, .sq-sparkle:focus
 .sq-settings-alert-control { display: inline-flex; align-items: center; gap: 7px; }
 .sq-settings-alert-count { min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: #D93025; color: #FFFFFF; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
 @media (max-width: 480px) { .sq-settings-popover { right: -48px !important; width: min(292px, calc(100vw - 24px)) !important; } }
+
+/* A brief confirmation toast (e.g. Mark fixed), outside the app's templated tree so data.js can show it
+   around a redraw without the templating system racing it. */
+.sq-toast { position: fixed; left: 50%; bottom: 28px; z-index: 100; max-width: min(360px, calc(100vw - 32px)); box-sizing: border-box; padding: 12px 18px; border-radius: 10px; background: #202124; color: #FFFFFF; font-size: 13px; line-height: 20px; box-shadow: 0 4px 16px rgba(0,0,0,.25); opacity: 0; transform: translate(-50%, 8px); pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
+.sq-toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .sq-toast { transition: none; } }

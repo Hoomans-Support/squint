@@ -19,8 +19,13 @@ class Component extends DCLogic {
     const ticketCard = (id, triggerFk) => {
       const ins = SQ.insight(id);
       const c = SQ.ticketCardModel(ins);
+      // session-local, same mechanism as Mark fixed and the Journeys drawer's own ticket stage
+      // (SQ.isTicketCreated/SQ.markTicketCreated): survives a reload and stays in sync across pages
+      const created = SQ.isTicketCreated(id);
       return {
         ...c, ticketOpen: ticketOpenId === id, ticketClosed: ticketOpenId !== id, toggleTicket: toggleTicket(id, triggerFk),
+        created, notCreated: !created,
+        markCreated: () => SQ.markTicketCreated(id),
         copy: () => {
           let ok = false;
           const done = (v) => this.setState({ copied: v ? 'Copied to the clipboard' : 'Copy is blocked here. Select the text and copy it by hand.' });
@@ -105,7 +110,7 @@ class Component extends DCLogic {
       const open = openId === p.id;
       const bars = [1, 2, 3].map((n) => (n <= p.confN ? '#1A73E8' : '#DADCE0'));
       return {
-        ...p,
+        ...p, fixed: false, notFixed: true,
         c1: bars[0], c2: bars[1], c3: bars[2],
         valueStyle: p.valueNa ? 'color: #5F6368' : 'font-weight: 500',
         hasCtx: !!p.ctx, hasWhy: !!p.why,
@@ -113,6 +118,16 @@ class Component extends DCLogic {
         fk: 'row-' + p.id,
         toggle: () => { this.setState({ openId: open ? null : p.id }); SQ.refocus('row-' + p.id); },
         ticket: ticketCard(p.id, 'row-draft-' + p.id), journeys: journeys(p.id), askAI: askAI(p.id)
+      };
+    });
+    // fixed findings stay visible, greyed out, at the bottom — not counted in nOthers or any KPI
+    const fixedRows = SQ.fixedProblems().map((i) => {
+      const p = SQ.problemRec(i);
+      const d = SQ.fixedDate(i.id);
+      return {
+        ...p, fixed: true, notFixed: false,
+        fixedDateLabel: d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
+        fk: 'row-fixed-' + p.id
       };
     });
 
@@ -170,7 +185,7 @@ class Component extends DCLogic {
       hasTop: !!top, empty: !top, top,
       calmSub: (sc.persona === 'all' ? 'All users' : SQ.personaLabel(sc.persona)) + ', ' + SQ.RANGES[sc.range].label.toLowerCase() + ': ' + view.insight_ids.length + ' finding' + (view.insight_ids.length === 1 ? '' : 's') + ' checked, none is a problem.',
       kpis, trust, trendNote, hasTrendNote: !!trendNote,
-      showOthers: !!top, hasOthers: nOthers > 0, noOthers: nOthers === 0, rows,
+      showOthers: !!top, hasOthers: (nOthers + fixedRows.length) > 0, noOthers: (nOthers + fixedRows.length) === 0, rows: rows.concat(fixedRows),
       otherTitle: nOthers === 1 ? 'Other problem' : 'Other problems',
       exits, checked, hasChecked: checked.length > 0, noChecked: checked.length === 0
     };

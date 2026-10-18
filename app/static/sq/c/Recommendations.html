@@ -23,7 +23,7 @@
           </div>
           <div style="display: flex; flex-wrap: wrap; gap: 8px">
             <template data-sc="if" value="{{b.showRewrite}}" hint-placeholder-val="{{ false }}">
-              <button type="button" class="btn btn-outlined" onClick="{{doRewrite}}" disabled="{{b.rewriting}}">{{rewriteLabel}}</button>
+              <button type="button" class="btn btn-outlined" onClick="{{doRewrite}}" disabled="{{b.rewriting}}"><svg class="sq-sparkle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg>{{rewriteLabel}}</button>
             </template>
             <template data-sc="if" value="{{b.aiRewritten}}" hint-placeholder-val="{{ false }}">
               <button type="button" class="btn btn-outlined" onClick="{{useStandard}}">Standard wording</button>
@@ -53,7 +53,7 @@
         <article class="sq-bart" style="width: 100%; box-sizing: border-box; margin: 0 0 0 auto; background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 12px; padding: 48px 56px; display: flex; flex-direction: column; gap: 32px">
           <header style="display: flex; flex-direction: column; gap: 12px">
             <div class="cap" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-              <svg width="20" height="20" viewBox="30 30 545 545" aria-hidden="true"><g fill="none" stroke-width="72" stroke-linecap="round"><path d="M165.2 100.8A188 188 0 0 1 358.8 100.8" stroke="#FBBC04"></path><path d="M423.2 165.2A188 188 0 0 1 423.2 358.8" stroke="#4285F4"></path><path d="M358.8 423.2A188 188 0 0 1 165.2 423.2" stroke="#EA4335"></path><path d="M100.8 358.8A188 188 0 0 1 100.8 165.2" stroke="#34A853"></path><path d="M432 432L528 528" stroke="#202124"></path></g><circle cx="262" cy="262" r="34" fill="#4285F4"></circle></svg>
+              <svg width="20" height="20" viewBox="30 30 545 545" aria-hidden="true"><g fill="none" stroke-width="72" stroke-linecap="round"><path d="M165.2 100.8A188 188 0 0 1 358.8 100.8" stroke="#FBBC04"></path><path d="M423.2 165.2A188 188 0 0 1 423.2 358.8" stroke="#4285F4"></path><path d="M358.8 423.2A188 188 0 0 1 165.2 423.2" stroke="#EA4335"></path><path d="M100.8 358.8A188 188 0 0 1 100.8 165.2" stroke="#34A853"></path><path d="M432 432L528 528" stroke="#202124"></path></g></svg>
               <span>{{b.kicker}}</span>
             </div>
             <h2 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 400">{{b.hA}} <span style="font-weight: 500">{{b.hB}}</span>{{b.hC}}</h2>
