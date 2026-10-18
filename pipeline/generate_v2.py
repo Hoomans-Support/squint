@@ -599,8 +599,8 @@ def build_web(seed: int, users: list):
 
 def render_raw_web(user: dict, sid: str, e: dict, n: int, browser_class: str) -> dict:
     """Own raw shape on purpose (page/event/properties/context, not screen_name/event_name/params/device_info):
-    looks like a real web analytics export, distinct from the app SDK shape above (same precedent as dining's
-    own raw events, but as a second named source in the same mapping file, not a second dataset)."""
+    looks like a real web analytics export, distinct from the app SDK shape above, as a second named source
+    in the same mapping file, not a second dataset."""
     ts = e["ts"]
     props = {}
     if e.get("dwell_ms") is not None:

@@ -23,7 +23,7 @@ log = logging.getLogger("ask")
 bp = Blueprint("ask", __name__)
 
 STATIC = Path(__file__).parent / "static"
-DATASETS = {"wallet": "results.json", "dining": "results_dining.json"}      # the only files a request may ask about
+DATASETS = {"wallet": "results.json"}      # the only files a request may ask about
 RESULTS = STATIC / DATASETS["wallet"]                                          # the default dataset
 MODEL = "gemini-2.5-flash"
 HIDDEN_PERSONAS = {"fraudster", "unknown"}     # hidden in the UI, so hidden from the model too

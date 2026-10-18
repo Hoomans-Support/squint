@@ -74,15 +74,7 @@ chk("missing id is a 400", post({}).status_code == 400)
 chk("GET is refused", cl.get("/api/factcheck").status_code == 405)
 chk("an oversized body is refused", cl.post("/api/factcheck", data="x" * 2000, content_type="application/json").status_code in (400, 413))
 
-# 4b. datasets: the request names the dataset and each one is grounded on its own file
-dres = json.loads((HERE.parent / "static" / "results_dining.json").read_text(encoding="utf-8"))
-wallet_ids = {i["id"] for i in results["insights"]}
-dvis = next(i for i in dres["insights"] if i["id"] not in wallet_ids and (i.get("diagnosis") or {}).get("claims")
-            and not all(p in ("fraudster", "unknown") for p in (i.get("persona_ids") or ["x"])))
-os.environ["FACTCHECK_ENABLED"] = "0"
-r = post({"id": dvis["id"], "dataset": "dining"}); j = r.get_json()
-chk("dining: a dining finding is answered when the dataset is dining", r.status_code == 200 and len(j["claims"]) == len(dvis["diagnosis"]["claims"]), j)
-chk("dining: that finding is unknown to the wallet dataset", post({"id": dvis["id"]}).status_code == 404 and post({"id": dvis["id"], "dataset": "wallet"}).status_code == 404)
+# 4b. datasets: an unknown dataset name is rejected
 chk("an unknown dataset is a 400", post({"id": vis["id"], "dataset": "nope"}).status_code == 400 and post({"id": vis["id"], "dataset": 5}).status_code == 400)
 chk("a path is not a dataset", post({"id": vis["id"], "dataset": "../results"}).status_code == 400)
 

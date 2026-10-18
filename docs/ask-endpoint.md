@@ -4,7 +4,7 @@ All data is SYNTHETIC. This is the free-form sibling of the Chat now tab's built
 
 ## What it does
 
-`POST /api/ask` takes `{"question": "...", "dataset": "wallet" | "dining"}` and answers using only a compact, id-free summary built from `static/results.json` (or `results_dining.json`): findings, their signals and diagnoses, last-7-days KPIs, data-health faults, cohorts and product funnels. Hidden user groups (fraudster, unknown) are stripped from the summary before the model ever sees it, the same as the UI. The model returns `{"answer", "refs", "can_answer"}`; `can_answer: false` or a failed verification becomes a refusal, never a guess.
+`POST /api/ask` takes `{"question": "...", "dataset": "wallet"}` and answers using only a compact, id-free summary built from `static/results.json`: findings, their signals and diagnoses, last-7-days KPIs, data-health faults, cohorts and product funnels. Hidden user groups (fraudster, unknown) are stripped from the summary before the model ever sees it, the same as the UI. The model returns `{"answer", "refs", "can_answer"}`; `can_answer: false` or a failed verification becomes a refusal, never a guess.
 
 ## One click, one call
 

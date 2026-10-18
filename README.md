@@ -81,13 +81,6 @@ python pipeline/eval.py
 
 `pipeline/generate.py` is the earlier `synthetic-v1` generator, kept as a rollback.
 
-### A second sample: a dining app
-To show that Squint is not tied to one product, there is a second synthetic dataset, `synthetic-dining-v1`: a food ordering and table booking app with its own raw event layout (translated by `pipeline/mapping_dining.json`), its own labels and story, and the same internal ids, so the whole pipeline and dashboard run unchanged. The Onboarding page lets you pick a dataset (wallet or dining) and, separately, a flow (the journeys and the source events each step reads); a flow that does not match the data is flagged with measured counts and Squint will not continue until you pick one that does. The Diagnostic Agent got 9 of 9 dining findings right without any tuning on that dataset. Details, planted patterns and commands: [docs/dining-dataset.md](docs/dining-dataset.md).
-
-```bash
-python pipeline/pipeline.py --profile dining --generate --seed 42   # generate, check, diagnose and build the dining results
-```
-
 ## Repo layout
 
 | Path | Contents |

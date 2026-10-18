@@ -85,16 +85,8 @@ chk("a finding from another view is a 404", post({**BODY, "persona": "unregister
 chk("GET is refused", cl.get("/api/brief-ai").status_code == 405)
 chk("an oversized body is refused", cl.post("/api/brief-ai", data="x" * 3000, content_type="application/json").status_code in (400, 413))
 
-# 4b. datasets: the request names the dataset and the facts come from that file
-dres = json.loads((HERE.parent / "static" / "results_dining.json").read_text(encoding="utf-8"))
-dv = dres["views"]["7d|all|all"]
-dids = [i["id"] for i in dres["insights"] if i["id"] in dv["insight_ids"] and i["severity"] != "healthy" and i["id"] not in results["views"]["7d|all|all"]["insight_ids"]
-        and not all(p in ("fraudster", "unknown") for p in (i.get("persona_ids") or ["x"]))][:2]
-DBODY = {"range": "7d", "platform": "all", "persona": "all", "ids": dids, "dataset": "dining"}
-r = post(DBODY); j = r.get_json()
-chk("dining: a rewrite is answered from the dining file", r.status_code == 200 and j.get("source") == "gemini" and j.get("ids") == dids, j)
-chk("dining: those findings are unknown to the wallet dataset", post({**DBODY, "dataset": "wallet"}).status_code == 404)
-chk("an unknown dataset is a 400", post({**DBODY, "dataset": "nope"}).status_code == 400 and post({**DBODY, "dataset": ["dining"]}).status_code == 400)
+# 4b. datasets: an unknown dataset name is rejected
+chk("an unknown dataset is a 400", post({**BODY, "dataset": "nope"}).status_code == 400 and post({**BODY, "dataset": ["nope"]}).status_code == 400)
 
 # 5. verification: an invented number, a link, a wrong count, a bad owner
 facts, used = brief_ai.brief_facts(results, "7d", "all", "all", ids)

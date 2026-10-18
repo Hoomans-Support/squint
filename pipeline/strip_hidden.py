@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Take the hidden user groups out of a results file before it is published. ALL DATA HERE IS SYNTHETIC.
 
-The dashboard never shows two groups: the fraud-like one (Fraudster in the wallet sample, Promo abusers in the dining sample) and Unknown.
+The dashboard never shows two groups: the fraud-like one (Fraudster) and Unknown.
 Until now the page only hid them when it loaded results.json, so anyone who opened the file could still read their rows. This step
 removes them from the file itself, so the published copy no longer contains them. What the page shows does not change: the same
 findings, cohorts, replays, Ask answers and group rows are dropped that the page used to drop at load (scrub() in app/static/app.js),

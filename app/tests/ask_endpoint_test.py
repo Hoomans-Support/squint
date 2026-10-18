@@ -133,9 +133,7 @@ def test_mock():
 def test_datasets():
     """Mock mode answers with the first finding's title, so the title shows which file the question was grounded on."""
     s, w, _ = req("/api/ask", "POST", {"question": "dataset probe wallet"}, ip="10.7.0.1")
-    s2, d, _ = req("/api/ask", "POST", {"question": "dataset probe dining", "dataset": "dining"}, ip="10.7.0.2")
     check("default dataset is the wallet", s == 200 and "Send money" in (w.get("answer") or ""), w)
-    check("dining is grounded on the dining file", s2 == 200 and "Group platters" in (d.get("answer") or ""), d)
     check("an unknown dataset is a 400", req("/api/ask", "POST", {"question": "x", "dataset": "nope"}, ip="10.7.0.3")[0] == 400)
     check("a path is not a dataset", req("/api/ask", "POST", {"question": "x", "dataset": "../results"}, ip="10.7.0.4")[0] == 400)
 

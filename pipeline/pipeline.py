@@ -7,7 +7,6 @@ All data is SYNTHETIC in this build.
   python pipeline/pipeline.py --offline            # no network: cached diagnoses, trusted rules, else unclassified
   python pipeline/pipeline.py --generate --seed 7 --workdir data/eval/seed_7
   python pipeline/pipeline.py --publish            # also copy to app/static/results.json (only if no live UI claim)
-  python pipeline/pipeline.py --profile dining --generate    # the dining sample: data/dining, results_dining.json
 
 Guardian and Watchdog run with --ground-truth when ground_truth.json is in the work dir: a failed check stops the run.
 The diagnose step is build_results.py --diagnose (same process, evidence stays in memory); data/cache/ holds the saved outputs.
@@ -32,8 +31,6 @@ ROOT = HERE.parent
 PROFILES = {
     "wallet": {"generator": "generate_v2.py", "mapping": "mapping_synthetic_v2.json", "workdir": "data/synthetic",
                "result": "results_v2.json", "published": "results.json", "dataset": "synthetic-v2"},
-    "dining": {"generator": "generate_dining.py", "mapping": "mapping_dining.json", "workdir": "data/dining",
-               "result": "results_dining.json", "published": "results_dining.json", "dataset": "synthetic-dining-v1"},
 }
 
 
@@ -87,7 +84,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--profile", choices=sorted(PROFILES), default="wallet", help="which sample dataset (default: wallet)")
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--workdir", help="default: the profile's folder (data/synthetic or data/dining)")
+    ap.add_argument("--workdir", help="default: the profile's folder (data/synthetic)")
     ap.add_argument("--generate", action="store_true", help="regenerate the raw synthetic events first")
     ap.add_argument("--out", help="default: <workdir>/<the profile's results file>")
     ap.add_argument("--source", choices=("file", "bigquery"), default="file",
@@ -99,7 +96,7 @@ def main():
     a = ap.parse_args()
     prof = PROFILES[a.profile]
     if a.source == "bigquery" and a.profile != "wallet":
-        raise SystemExit("--source bigquery only exists for the wallet sample (the dining sample stays file-based)")
+        raise SystemExit("--source bigquery only exists for the wallet sample")
     if a.source == "bigquery" and a.generate:
         raise SystemExit("--generate writes the raw file: load it with `bq_source.py load`, then run with --source bigquery")
     os.environ["SQUINT_PROFILE"] = a.profile      # every stage below reads it (pipeline/profiles/)

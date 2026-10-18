@@ -11,7 +11,7 @@ from __future__ import annotations
 import importlib
 import os
 
-NAMES = ("wallet", "dining")
+NAMES = ("wallet",)
 
 
 def active_name() -> str:

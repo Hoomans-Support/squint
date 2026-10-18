@@ -8,7 +8,7 @@ Guardian, Watchdog, the Diagnostic Agent and the results are identical (checked 
 Table: <project>.squint_samples.wallet_events, one row per raw event:
   line_no INT64 (the line in the source file), event_id STRING, session_id STRING, platform STRING, event_ts TIMESTAMP,
   raw JSON (the event exactly as the source logged it)
-Only the wallet sample is loaded; the dining sample stays file-based.
+Only the wallet sample is loaded.
 
 The dashboard never queries BigQuery. Visitors do not log in and cannot run queries: the pipeline reads the table with the builder's
 Application Default Credentials, and the page only shows a small summary file this script writes (app/static/bigquery_source.json).

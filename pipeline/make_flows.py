@@ -9,7 +9,7 @@ raw event names come from its mapping file (maps.app_screens, the raw screens th
 
   python pipeline/make_flows.py
 
-Writes app/static/flows/wallet.json, flows/dining.json and flows/source_events.json (the raw screens each dataset logs).
+Writes app/static/flows/wallet.json and flows/source_events.json (the raw screens the dataset logs).
 """
 from __future__ import annotations
 
@@ -20,8 +20,6 @@ ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = [
     {"id": "wallet", "name": "Wallet app flow", "tagline": "Sign up and login, wallet top-up, and transaction steps of a mobile wallet.",
      "results": "app/static/results.json", "mapping": "pipeline/mapping_synthetic_v2.json"},
-    {"id": "dining", "name": "Dining app flow", "tagline": "Sign up and login, table booking, and order steps of a food ordering app.",
-     "results": "app/static/results_dining.json", "mapping": "pipeline/mapping_dining.json"},
 ]
 
 

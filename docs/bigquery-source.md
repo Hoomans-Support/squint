@@ -1,6 +1,6 @@
 # BigQuery source for the wallet sample
 
-**All of it is synthetic sample data.** One dataset only: the wallet sample (`synthetic-v2`). The dining sample stays file-based.
+**All of it is synthetic sample data.** One dataset only: the wallet sample (`synthetic-v2`).
 
 ## What it is
 The raw events of the wallet sample are loaded into a BigQuery table, and the pipeline can read them from there instead of from
@@ -26,7 +26,7 @@ python pipeline/bq_source.py compare --a data/synthetic/events_raw.jsonl --b raw
 python pipeline/pipeline.py --source bigquery --workdir data/synthetic [--offline | --no-diagnose] [--publish]
 ```
 `--source bigquery` exports the table to `<workdir>/events_raw.bq.jsonl`, uses that as the raw file for every stage and writes
-`<workdir>/bigquery_source.json`; `--publish` copies that summary to `app/static/bigquery_source.json`. It refuses `--profile dining` and `--generate`.
+`<workdir>/bigquery_source.json`; `--publish` copies that summary to `app/static/bigquery_source.json`. It refuses `--generate`.
 Needs `pip install -r requirements.txt` (`google-cloud-bigquery`) and Application Default Credentials with BigQuery access to the project.
 
 ## What visitors see
